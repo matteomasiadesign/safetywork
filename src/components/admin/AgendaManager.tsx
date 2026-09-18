@@ -623,88 +623,107 @@ export default function AgendaManager({
   return (
     <div className="space-y-4 select-none animate-in fade-in duration-300">
       {/* =========================================================================
-          TOOLBAR UNIFICATA AD ALTA DENSITÀ (Zero spreco di spazio verticale)
+          TOOLBAR UNIFICATA RESPONSIVA (Mobile-First & Anti-Sovraffollamento)
           ========================================================================= */}
-      <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-        {/* Sinistra: Navigatore temporale rapido + Periodo */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
-            <button
-              type="button"
-              onClick={handlePrev}
-              className="p-1.5 hover:bg-white text-slate-700 rounded-lg transition-all"
-              title="Periodo precedente"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleGoToday}
-              className="px-2.5 py-1 text-xs font-bold text-slate-800 hover:bg-white rounded-lg transition-all"
-            >
-              Oggi
-            </button>
-            <button
-              type="button"
-              onClick={handleNext}
-              className="p-1.5 hover:bg-white text-slate-700 rounded-lg transition-all"
-              title="Periodo successivo"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+      <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+        {/* RIGA 1: Navigatore Temporale Rapido + Azioni Nuovo & Export */}
+        <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          {/* Sinistra: Controlli Temporali Prev/Oggi/Next + Mese/Anno */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+              <button
+                type="button"
+                onClick={handlePrev}
+                className="p-1.5 sm:p-2 hover:bg-white active:bg-slate-200 text-slate-700 rounded-lg transition-all"
+                title="Periodo precedente"
+                aria-label="Periodo precedente"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleGoToday}
+                className="px-2 sm:px-2.5 py-1 text-xs font-bold text-slate-800 hover:bg-white active:bg-slate-200 rounded-lg transition-all"
+              >
+                Oggi
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                className="p-1.5 sm:p-2 hover:bg-white active:bg-slate-200 text-slate-700 rounded-lg transition-all"
+                title="Periodo successivo"
+                aria-label="Periodo successivo"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <select
+                value={currentMonth}
+                onChange={(e) => {
+                  const d = new Date(currentDate);
+                  d.setMonth(Number(e.target.value));
+                  setCurrentDate(d);
+                }}
+                className="px-2 sm:px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97] cursor-pointer"
+              >
+                {MONTH_NAMES_IT.map((m, idx) => (
+                  <option key={idx} value={idx}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={currentYear}
+                onChange={(e) => {
+                  const d = new Date(currentDate);
+                  d.setFullYear(Number(e.target.value));
+                  setCurrentDate(d);
+                }}
+                className="px-2 sm:px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97] cursor-pointer"
+              >
+                {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <span className="text-[10px] font-extrabold uppercase tracking-wider bg-[#e6f6f7] text-[#008e97] px-2 py-0.5 rounded-full border border-[#008e97]/20 hidden md:inline">
+              {filteredEvents.length} impegni
+            </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <select
-              value={currentMonth}
-              onChange={(e) => {
-                const d = new Date(currentDate);
-                d.setMonth(Number(e.target.value));
-                setCurrentDate(d);
-              }}
-              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+          {/* Destra: Esporta .ICS + Nuovo Impegno */}
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            <button
+              type="button"
+              onClick={handleExportIcs}
+              className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition-colors shadow-2xs"
+              title="Esporta calendario .ICS"
+              aria-label="Esporta calendario .ICS"
             >
-              {MONTH_NAMES_IT.map((m, idx) => (
-                <option key={idx} value={idx}>
-                  {m}
-                </option>
-              ))}
-            </select>
+              <Download className="w-4 h-4" />
+            </button>
 
-            <select
-              value={currentYear}
-              onChange={(e) => {
-                const d = new Date(currentDate);
-                d.setFullYear(Number(e.target.value));
-                setCurrentDate(d);
-              }}
-              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+            <button
+              type="button"
+              onClick={() => openAddModal()}
+              className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-[#008e97] hover:bg-[#00777f] active:bg-[#006e75] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-xs shrink-0"
             >
-              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+              <Plus className="w-4 h-4" />
+              <span>Nuovo</span>
+            </button>
           </div>
-
-          <span className="text-sm font-black text-slate-900 tracking-tight ml-1 hidden sm:inline">
-            {viewMode === "year" && `${currentYear}`}
-            {viewMode === "month" && `${MONTH_NAMES_IT[currentMonth]} ${currentYear}`}
-            {viewMode === "week" && `Settimana ${weekDays[0]?.dayNumber} ${MONTH_NAMES_IT[weekDays[0]?.date.getMonth()]}`}
-            {viewMode === "day" && `${currentDate.getDate()} ${MONTH_NAMES_IT[currentMonth]} ${currentYear}`}
-            {viewMode === "list" && "Tutti gli Impegni"}
-          </span>
-
-          <span className="text-[10px] font-extrabold uppercase tracking-wider bg-[#e6f6f7] text-[#008e97] px-2 py-0.5 rounded-full border border-[#008e97]/20">
-            {filteredEvents.length} imp.
-          </span>
         </div>
 
-        {/* Destra: Selettore Viste + Ricerca & Filtri + Nuovo Impegno */}
-        <div className="flex flex-wrap items-center justify-between xl:justify-end gap-2.5">
-          {/* Selettore Viste compatto */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+        {/* RIGA 2: Selettore Viste a Scorrimento + Ricerca & Filtro */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+          {/* Selettore Viste compatto orizzontale */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 overflow-x-auto no-scrollbar shrink-0">
             {(
               [
                 { id: "month", label: "Mese" },
@@ -718,7 +737,7 @@ export default function AgendaManager({
                 key={v.id}
                 type="button"
                 onClick={() => setViewMode(v.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                   viewMode === v.id
                     ? "bg-white text-slate-900 shadow-xs"
                     : "text-slate-500 hover:text-slate-900"
@@ -729,256 +748,348 @@ export default function AgendaManager({
             ))}
           </div>
 
-          {/* Ricerca Rapida compatta */}
-          <div className="relative w-36 sm:w-44">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cerca..."
-              className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
+          {/* Ricerca e Filtro Tipologia con larghezza flessibile */}
+          <div className="flex items-center gap-2 flex-1">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Cerca impegno, cliente, sede..."
+                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97] shrink-0"
+            >
+              <option value="all">Tutti i tipi</option>
+              <option value="corso">🎓 Corsi</option>
+              <option value="sopralluogo">🔍 Sopralluoghi</option>
+              <option value="scadenza">🚨 Scadenze</option>
+              <option value="consulenza">💼 Consulenze</option>
+              <option value="appuntamento">📞 Incontri</option>
+              <option value="altro">✍️ Altro</option>
+            </select>
           </div>
-
-          {/* Filtro Tipologia compatto */}
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
-          >
-            <option value="all">Tutti i tipi</option>
-            <option value="corso">🎓 Corsi</option>
-            <option value="sopralluogo">🔍 Sopralluoghi</option>
-            <option value="scadenza">🚨 Scadenze</option>
-            <option value="consulenza">💼 Consulenze</option>
-            <option value="appuntamento">📞 Incontri</option>
-            <option value="altro">✍️ Altro / Personalizzato</option>
-          </select>
-
-          {/* Esporta .ICS icon */}
-          <button
-            type="button"
-            onClick={handleExportIcs}
-            className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition-colors"
-            title="Esporta calendario .ICS"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-
-          {/* Pulsante Nuovo Impegno */}
-          <button
-            type="button"
-            onClick={() => openAddModal()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-xs shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nuovo</span>
-          </button>
         </div>
       </div>
 
       {/* =========================================================================
-          4. VISTE DEL CALENDARIO
+          4. VISTE DEL CALENDARIO OTTIMIZZATE
           ========================================================================= */}
 
-      {/* -------------------- VISTA MESE -------------------- */}
+      {/* -------------------- VISTA MESE (IBRIDA DESKTOP / MOBILE) -------------------- */}
       {viewMode === "month" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Intestazione Colonne Giorni */}
-          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-xs font-bold text-slate-600 py-3">
-            {DAY_NAMES_SHORT_IT.map((d, i) => (
-              <div key={i} className="tracking-wider uppercase">
-                {d}
-              </div>
-            ))}
+        <div className="space-y-3">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Intestazione Colonne Giorni */}
+            <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-[10px] sm:text-xs font-bold text-slate-600 py-2 sm:py-3">
+              {DAY_NAMES_SHORT_IT.map((d, i) => (
+                <div key={i} className="tracking-wider uppercase">
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Griglia Giorni Mese */}
+            <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-slate-100">
+              {monthCalendarCells.map((cell, idx) => {
+                const dayEvents = eventsByDate[cell.dateStr] || [];
+                const isSelected = selectedDate === cell.dateStr;
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setSelectedDate(cell.dateStr);
+                      // Su desktop apre anche il modale panoramica del giorno
+                      if (typeof window !== "undefined" && window.innerWidth >= 640) {
+                        setDayModalDate(cell.dateStr);
+                      }
+                    }}
+                    className={`min-h-[54px] sm:min-h-[130px] p-1 sm:p-2.5 flex flex-col justify-between transition-all cursor-pointer group ${
+                      cell.isCurrentMonth
+                        ? "bg-white hover:bg-slate-50/80"
+                        : "bg-slate-50/50 text-slate-400 hover:bg-slate-100/60"
+                    } ${
+                      isSelected
+                        ? "ring-2 ring-[#008e97] ring-inset bg-[#e6f6f7]/25"
+                        : "hover:border-slate-300"
+                    }`}
+                    title={`Impegni del ${cell.dateStr}`}
+                  >
+                    {/* Top: Numero Giorno */}
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-transform group-hover:scale-105 ${
+                          cell.isToday
+                            ? "bg-[#008e97] text-white shadow-xs"
+                            : isSelected
+                            ? "bg-[#008e97]/15 text-[#008e97] font-black"
+                            : cell.isCurrentMonth
+                            ? "text-slate-800 group-hover:text-[#008e97]"
+                            : "text-slate-400"
+                        }`}
+                      >
+                        {cell.dayNumber}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAddModal(cell.dateStr);
+                        }}
+                        className="hidden sm:block opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#008e97] hover:bg-slate-100 rounded-md transition-all"
+                        title={`Aggiungi rapidamente un impegno per il ${cell.dateStr}`}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* VISTA MOBILE: DOT INDICATORS (Zero sovraffollamento) */}
+                    <div className="flex sm:hidden items-center justify-center gap-1 my-1 min-h-[12px]">
+                      {dayEvents.slice(0, 3).map((evt) => {
+                        const dotColor =
+                          evt.type === "corso"
+                            ? "bg-[#008e97]"
+                            : evt.type === "sopralluogo"
+                            ? "bg-[#f58220]"
+                            : evt.type === "scadenza"
+                            ? "bg-[#df0000]"
+                            : evt.type === "consulenza"
+                            ? "bg-purple-600"
+                            : evt.type === "appuntamento"
+                            ? "bg-emerald-600"
+                            : "bg-slate-500";
+                        return (
+                          <span
+                            key={evt.id}
+                            className={`w-1.5 h-1.5 rounded-full ${dotColor} shrink-0 shadow-2xs`}
+                            title={`${evt.startTime || ""} ${evt.title}`}
+                          />
+                        );
+                      })}
+                      {dayEvents.length > 3 && (
+                        <span className="text-[9px] font-bold text-slate-400 leading-none">
+                          +
+                        </span>
+                      )}
+                    </div>
+
+                    {/* VISTA DESKTOP: PILLS COMPLETE INFORMATIVE */}
+                    <div className="hidden sm:block space-y-1 my-1 overflow-hidden pointer-events-none">
+                      {dayEvents.slice(0, 3).map((evt) => {
+                        const cfg = getEventTypeConfig(evt.type, evt.customType);
+                        return (
+                          <div
+                            key={evt.id}
+                            className={`px-1.5 py-0.5 rounded text-[11px] font-semibold truncate border ${cfg.bg} ${cfg.text} ${cfg.border} flex items-center gap-1 shadow-2xs`}
+                            title={`${evt.startTime || ""} ${evt.title}`}
+                          >
+                            <span className="font-mono text-[9px] opacity-85 shrink-0">
+                              {evt.startTime?.slice(0, 5)}
+                            </span>
+                            <span className="truncate">{evt.title}</span>
+                          </div>
+                        );
+                      })}
+
+                      {dayEvents.length > 3 && (
+                        <div className="text-[10px] text-slate-500 font-bold pl-1">
+                          +{dayEvents.length - 3} altri
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Desktop: Conteggio impegni */}
+                    <div className="hidden sm:flex items-center justify-between text-[10px] pt-1">
+                      {dayEvents.length > 0 ? (
+                        <span className="font-bold text-[#008e97] group-hover:underline flex items-center gap-1">
+                          <span>{dayEvents.length} {dayEvents.length === 1 ? "impegno" : "impegni"}</span>
+                          <ArrowRight className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                          + pianifica
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Griglia Giorni Mese */}
-          <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-slate-100">
-            {monthCalendarCells.map((cell, idx) => {
-              const dayEvents = eventsByDate[cell.dateStr] || [];
-              const isSelected = selectedDate === cell.dateStr;
+          {/* SCHEDA GIORNALIERA MOBILE (FEED SOTTO IL MESE AL TOCCO) */}
+          <div className="sm:hidden bg-white rounded-2xl border border-slate-200 shadow-xs p-3.5 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#008e97]">
+                  Impegni del Giorno Selezionato
+                </span>
+                <h4 className="text-sm font-extrabold text-slate-900 tracking-tight">
+                  {formatItalianDate(selectedDate)}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => openAddModal(selectedDate)}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#008e97] text-white text-xs font-bold rounded-xl shadow-2xs hover:bg-[#00777f] active:bg-[#006e75]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Aggiungi</span>
+              </button>
+            </div>
 
-              return (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    setSelectedDate(cell.dateStr);
-                    setDayModalDate(cell.dateStr);
-                  }}
-                  className={`min-h-[110px] sm:min-h-[130px] p-1.5 sm:p-2.5 flex flex-col justify-between transition-all cursor-pointer group ${
-                    cell.isCurrentMonth ? "bg-white hover:bg-slate-50/80" : "bg-slate-50/50 text-slate-400 hover:bg-slate-100/60"
-                  } ${isSelected ? "ring-2 ring-[#008e97] ring-inset bg-[#e6f6f7]/20" : "hover:border-slate-300"}`}
-                  title={`Clicca per vedere tutti gli impegni del ${cell.dateStr}`}
+            {selectedDateEvents.length === 0 ? (
+              <div className="py-6 text-center text-slate-400 text-xs">
+                <CalendarIcon className="w-8 h-8 text-slate-300 mx-auto mb-1.5 opacity-70" />
+                <p>Nessun impegno in programma per questa data.</p>
+                <button
+                  type="button"
+                  onClick={() => openAddModal(selectedDate)}
+                  className="mt-2 text-[#008e97] font-bold hover:underline inline-flex items-center gap-1"
                 >
-                  {/* Top: Numero Giorno & Tasto rapido aggiungi */}
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-transform group-hover:scale-105 ${
-                        cell.isToday
-                          ? "bg-[#008e97] text-white shadow-xs"
-                          : cell.isCurrentMonth
-                          ? "text-slate-800 group-hover:text-[#008e97]"
-                          : "text-slate-400"
-                      }`}
+                  <Plus className="w-3 h-3" />
+                  <span>Crea un nuovo impegno</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {selectedDateEvents.map((evt) => {
+                  const cfg = getEventTypeConfig(evt.type, evt.customType);
+                  return (
+                    <div
+                      key={evt.id}
+                      onClick={() => setSelectedEventForDetail(evt)}
+                      className={`p-3 rounded-xl border ${cfg.border} bg-white shadow-2xs space-y-1.5 cursor-pointer active:scale-98 transition-all`}
                     >
-                      {cell.dayNumber}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openAddModal(cell.dateStr);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#008e97] hover:bg-slate-100 rounded-md transition-all"
-                      title={`Aggiungi rapidamente un impegno per il ${cell.dateStr}`}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Lista Eventi nel Giorno (Pills informative e leggibili) */}
-                  <div className="space-y-1 my-1 overflow-hidden pointer-events-none">
-                    {dayEvents.slice(0, 3).map((evt) => {
-                      const cfg = getEventTypeConfig(evt.type, evt.customType);
-                      return (
-                        <div
-                          key={evt.id}
-                          className={`px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold truncate border ${cfg.bg} ${cfg.text} ${cfg.border} flex items-center gap-1 shadow-2xs`}
-                          title={`${evt.startTime || ""} ${evt.title}`}
-                        >
-                          <span className="font-mono text-[9px] opacity-85 shrink-0">
-                            {evt.startTime?.slice(0, 5)}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
+                            {cfg.label}
                           </span>
-                          <span className="truncate">{evt.title}</span>
+                          <span className="font-mono text-[11px] font-bold text-slate-700">
+                            {evt.startTime} - {evt.endTime}
+                          </span>
                         </div>
-                      );
-                    })}
-
-                    {dayEvents.length > 3 && (
-                      <div className="text-[10px] text-slate-500 font-bold pl-1">
-                        +{dayEvents.length - 3} altri
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${STATUS_CONFIG[evt.status].badge}`}>
+                          {STATUS_CONFIG[evt.status].label}
+                        </span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Bottom: Conteggio impegni e freccia d'apertura al passaggio del mouse */}
-                  <div className="flex items-center justify-between text-[10px] pt-1">
-                    {dayEvents.length > 0 ? (
-                      <span className="font-bold text-[#008e97] group-hover:underline flex items-center gap-1">
-                        <span>{dayEvents.length} {dayEvents.length === 1 ? "impegno" : "impegni"}</span>
-                        <ArrowRight className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </span>
-                    ) : (
-                      <span className="text-[9px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                        + pianifica
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      <h5 className="text-xs font-bold text-slate-900 leading-snug">
+                        {evt.title}
+                      </h5>
+                      {evt.location && (
+                        <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="truncate">{evt.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* -------------------- VISTA SETTIMANA -------------------- */}
+      {/* -------------------- VISTA SETTIMANA (CON SCROLL ORIZZONTALE MOBILE) -------------------- */}
       {viewMode === "week" && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 divide-x divide-slate-200 text-center">
-            {weekDays.map((wd, i) => (
-              <div
-                key={i}
-                onClick={() => {
-                  setSelectedDate(wd.dateStr);
-                  setDayModalDate(wd.dateStr);
-                }}
-                className={`py-3 px-2 cursor-pointer transition-colors ${
-                  wd.isToday ? "bg-[#e6f6f7]/60" : "hover:bg-slate-100"
-                }`}
-                title={`Clicca per vedere tutti gli impegni del ${wd.dateStr}`}
-              >
-                <div className="text-[11px] uppercase font-bold text-slate-500">
-                  {wd.dayName}
-                </div>
-                <div
-                  className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-black mt-1 ${
-                    wd.isToday ? "bg-[#008e97] text-white" : "text-slate-900"
-                  }`}
-                >
-                  {wd.dayNumber}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 divide-x divide-slate-100 min-h-[450px]">
-            {weekDays.map((wd, i) => {
-              const dayEvents = eventsByDate[wd.dateStr] || [];
-              return (
-                <div
-                  key={i}
-                  className="p-2 space-y-2 bg-white flex flex-col justify-between group"
-                >
-                  <div className="space-y-2">
-                    {dayEvents.map((evt) => {
-                      const cfg = getEventTypeConfig(evt.type, evt.customType);
-                      return (
-                        <div
-                          key={evt.id}
-                          onClick={() => setSelectedEventForDetail(evt)}
-                          className={`p-2 rounded-xl border ${cfg.bg} ${cfg.border} cursor-pointer hover:shadow-xs transition-all`}
-                        >
-                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 mb-1">
-                            <span className="font-mono text-slate-700">
-                              {evt.startTime} - {evt.endTime}
-                            </span>
-                            <span className={`px-1 rounded text-[9px] uppercase ${STATUS_CONFIG[evt.status].badge}`}>
-                              {evt.status}
-                            </span>
-                          </div>
-                          <h5 className={`text-xs font-bold leading-snug line-clamp-2 ${cfg.text}`}>
-                            {evt.title}
-                          </h5>
-                          {evt.location && (
-                            <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1 truncate">
-                              <MapPin className="w-2.5 h-2.5 shrink-0" />
-                              <span className="truncate">{evt.location}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {dayEvents.length === 0 && (
-                      <div className="py-8 text-center text-slate-300 text-xs italic">
-                        Nessun impegno
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => openAddModal(wd.dateStr)}
-                    className="w-full mt-2 py-1.5 text-[11px] font-bold text-slate-500 hover:text-[#008e97] hover:bg-slate-50 rounded-lg border border-dashed border-slate-200 flex items-center justify-center gap-1 transition-colors"
+          <div className="overflow-x-auto no-scrollbar">
+            <div className="min-w-[680px]">
+              <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 divide-x divide-slate-200 text-center">
+                {weekDays.map((wd, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setSelectedDate(wd.dateStr);
+                      setDayModalDate(wd.dateStr);
+                    }}
+                    className={`py-3 px-2 cursor-pointer transition-colors ${
+                      wd.isToday ? "bg-[#e6f6f7]/60" : "hover:bg-slate-100"
+                    }`}
+                    title={`Clicca per vedere tutti gli impegni del ${wd.dateStr}`}
                   >
-                    <Plus className="w-3 h-3" />
-                    <span>Aggiungi</span>
-                  </button>
-                </div>
-              );
-            })}
+                    <div className="text-[11px] uppercase font-bold text-slate-500">
+                      {wd.dayName}
+                    </div>
+                    <div
+                      className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-black mt-1 ${
+                        wd.isToday ? "bg-[#008e97] text-white" : "text-slate-900"
+                      }`}
+                    >
+                      {wd.dayNumber}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 divide-x divide-slate-100 min-h-[450px]">
+                {weekDays.map((wd, i) => {
+                  const dayEvents = eventsByDate[wd.dateStr] || [];
+                  return (
+                    <div
+                      key={i}
+                      className="p-2 space-y-2 bg-white flex flex-col justify-between group"
+                    >
+                      <div className="space-y-2">
+                        {dayEvents.map((evt) => {
+                          const cfg = getEventTypeConfig(evt.type, evt.customType);
+                          return (
+                            <div
+                              key={evt.id}
+                              onClick={() => setSelectedEventForDetail(evt)}
+                              className={`p-2 rounded-xl border ${cfg.bg} ${cfg.border} cursor-pointer hover:shadow-xs transition-all`}
+                            >
+                              <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 mb-1">
+                                <span className="font-mono text-slate-700">
+                                  {evt.startTime} - {evt.endTime}
+                                </span>
+                                <span className={`px-1 rounded text-[9px] uppercase ${STATUS_CONFIG[evt.status].badge}`}>
+                                  {evt.status}
+                                </span>
+                              </div>
+                              <h5 className={`text-xs font-bold leading-snug line-clamp-2 ${cfg.text}`}>
+                                {evt.title}
+                              </h5>
+                              {evt.location && (
+                                <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1 truncate min-w-0">
+                                  <MapPin className="w-2.5 h-2.5 shrink-0" />
+                                  <span className="truncate">{evt.location}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {dayEvents.length === 0 && (
+                          <div className="py-8 text-center text-slate-300 text-xs italic">
+                            Nessun impegno
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1384,7 +1495,7 @@ export default function AgendaManager({
                       {/* Info Richiesta Collegata se presente */}
                       {evt.inquiryId && (
                         <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-purple-50/70 border border-purple-200/80 rounded-xl text-xs">
-                          <div className="flex items-center gap-2 text-purple-900 font-bold truncate">
+                          <div className="flex items-center gap-2 text-purple-900 font-bold truncate min-w-0">
                             <Inbox className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                             <span className="truncate">
                               Cliente dal sito: {evt.clientName} {evt.clientCompany && `(${evt.clientCompany})`}
