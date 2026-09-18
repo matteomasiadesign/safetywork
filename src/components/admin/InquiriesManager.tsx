@@ -323,8 +323,8 @@ export default function InquiriesManager({
         </div>
 
         {/* Destra: Campo Ricerca + Filtro Tipologia */}
-        <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-          <div className="relative w-44 sm:w-56">
+        <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 flex-1 sm:flex-initial">
+          <div className="relative flex-1 sm:w-60">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -367,7 +367,7 @@ export default function InquiriesManager({
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs divide-y divide-slate-100 overflow-hidden">
+          <div className="space-y-3">
             {filteredInquiries.map((inq) => {
               const isCourse = inq.type === "corso";
               const whatsappLink = getWhatsAppLink(inq);
@@ -380,27 +380,25 @@ export default function InquiriesManager({
               return (
                 <div
                   key={inq.id}
-                  className={`transition-colors ${
+                  className={`bg-white rounded-2xl border transition-all shadow-xs hover:shadow-md overflow-hidden ${
                     inq.status === "nuovo"
-                      ? "bg-rose-50/25 hover:bg-rose-50/40"
+                      ? "border-rose-300 ring-1 ring-rose-200/70"
                       : inq.status === "preventivo_inviato" || inq.status === "contattato"
-                      ? "bg-amber-50/20 hover:bg-amber-50/35"
+                      ? "border-amber-300 ring-1 ring-amber-200/50"
                       : inq.status === "confermato"
-                      ? "bg-emerald-50/15 hover:bg-emerald-50/30"
+                      ? "border-emerald-300 ring-1 ring-emerald-200/50"
                       : inq.status === "non_interessato"
-                      ? "opacity-65 bg-slate-50/40 hover:opacity-90"
-                      : "hover:bg-slate-50/70"
+                      ? "border-slate-200 opacity-70 bg-slate-50/40"
+                      : "border-slate-200"
                   }`}
                 >
-                  {/* Riga Compatta Principale */}
-                  <div className="p-3 sm:p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                    {/* Info Cliente & Tipologia */}
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Dropdown Stato Compatto */}
+                  {/* 1. Header Card: Dropdown Stato (sinistra) + Data & Tipologia (destra) */}
+                  <div className="px-3.5 sm:px-4 py-2.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
                       <select
                         value={inq.status === "contattato" ? "preventivo_inviato" : inq.status}
                         onChange={(e) => onUpdateStatus(inq.id, e.target.value as Inquiry["status"])}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider border cursor-pointer shrink-0 ${
+                        className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-black uppercase tracking-wider border cursor-pointer focus:outline-none transition-all shadow-2xs ${
                           inq.status === "nuovo"
                             ? "bg-[#fdf2f2] text-[#df0000] border-[#df0000]/40"
                             : inq.status === "preventivo_inviato" || inq.status === "contattato"
@@ -419,126 +417,160 @@ export default function InquiriesManager({
                         <option value="archiviato">📁 Archiviato</option>
                       </select>
 
-                      {/* Nome, Azienda & Corso */}
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-extrabold text-sm text-slate-900 truncate">
-                            {inq.name}
-                          </span>
-                          {inq.company && (
-                            <span className="text-xs text-slate-500 flex items-center gap-1 truncate font-medium">
-                              <Building className="w-3 h-3 text-slate-400 shrink-0" />
-                              <span className="truncate">{inq.company}</span>
-                            </span>
-                          )}
-                          {inq.clientType && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 border border-slate-200">
-                              {inq.clientType === "azienda" ? "Azienda" : "Privato"}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Riferimento al Corso o Servizio */}
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                          {isCourse ? (
-                            <span className="inline-flex items-center gap-1 font-semibold text-[#008e97] truncate">
-                              <GraduationCap className="w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate">{inq.courseTitle}</span>
-                              {inq.participantsCount && (
-                                <span className="text-slate-400 font-normal">
-                                  ({inq.participantsCount} pax)
-                                </span>
-                              )}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[#f58220] font-medium truncate">
-                              <MessageSquare className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{inq.service_type || "Richiesta Consulenza"}</span>
-                            </span>
-                          )}
-                          <span className="text-slate-300 hidden sm:inline">•</span>
-                          <span
-                            className="text-[11px] text-slate-400 font-mono hidden sm:inline"
-                            suppressHydrationWarning
-                          >
-                            {formatDate(inq.created_at)}
-                          </span>
-                        </div>
-                      </div>
+                      {inq.status === "nuovo" && (
+                        <span className="w-2 h-2 rounded-full bg-[#df0000] animate-ping" />
+                      )}
                     </div>
 
-                    {/* Azioni Rapide a Micro-Icone (WhatsApp, Chiama, Mail, Elimina, Dettagli) */}
-                    <div className="flex items-center justify-end gap-1.5 shrink-0">
-                      {/* WhatsApp 1-Click */}
+                    <div className="flex items-center gap-2 text-right">
+                      {inq.clientType && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white text-slate-600 border border-slate-200/80 shadow-2xs">
+                          {inq.clientType === "azienda" ? "Azienda" : "Privato"}
+                        </span>
+                      )}
+                      <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap" suppressHydrationWarning>
+                        {formatDate(inq.created_at)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 2. Corpo Card: Nome, Azienda, Box Corso o Servizio */}
+                  <div className="p-3.5 sm:p-4 space-y-2.5">
+                    <div className="min-w-0">
+                      <h3 className="font-extrabold text-base text-slate-900 tracking-tight leading-snug truncate">
+                        {inq.name}
+                      </h3>
+                      {inq.company && (
+                        <div className="text-xs text-slate-600 flex items-center gap-1.5 mt-0.5 font-medium min-w-0">
+                          <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{inq.company}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Box Corso / Servizio Elegante */}
+                    <div
+                      className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-3 ${
+                        isCourse
+                          ? "bg-[#e6f6f7]/60 border-[#008e97]/25 text-slate-900"
+                          : "bg-amber-50/60 border-amber-200/60 text-slate-900"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-2xs ${
+                            isCourse ? "bg-[#008e97] text-white" : "bg-[#f58220] text-white"
+                          }`}
+                        >
+                          {isCourse ? <GraduationCap className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs sm:text-sm font-bold truncate">
+                            {inq.courseTitle || inq.service_type || "Richiesta Consulenza"}
+                          </div>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5 flex-wrap">
+                            {inq.participantsCount && (
+                              <span className="font-semibold text-slate-700">
+                                👥 {inq.participantsCount} {inq.participantsCount === 1 ? "partecipante" : "partecipanti"}
+                              </span>
+                            )}
+                            {inq.preferredMode && (
+                              <span>• {inq.preferredMode}</span>
+                            )}
+                            {inq.city && (
+                              <span>• 📍 {inq.city}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {inq.courseSlug && (
+                        <Link
+                          to={`/corsi/${inq.courseSlug}`}
+                          target="_blank"
+                          className="p-1.5 text-[#008e97] hover:text-[#00777f] hover:bg-white/80 rounded-lg transition-colors shrink-0"
+                          title="Vedi scheda corso"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* Messaggio cliente in anteprima se presente */}
+                    {inq.message && !isExpanded && (
+                      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs text-slate-600 italic line-clamp-2">
+                        "{inq.message}"
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. Barra Azioni Ergonomica Mobile: Touch Targets >= 42px */}
+                  <div className="px-3.5 sm:px-4 py-2.5 bg-slate-50/70 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                    {/* Contatti Rapidi 1-Click */}
+                    <div className="flex items-center gap-2 flex-wrap">
                       {whatsappLink && (
                         <a
                           href={whatsappLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#25D366] border border-emerald-200/80 transition-all shadow-2xs hover:scale-105"
-                          title="Scrivi su WhatsApp con messaggio precompilato"
+                          className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95"
+                          title="Apri chat WhatsApp con messaggio precompilato"
                         >
-                          <MessageCircle className="w-4 h-4" />
+                          <MessageCircle className="w-4 h-4 shrink-0" />
+                          <span>WhatsApp</span>
                         </a>
                       )}
 
-                      {/* Chiama Subito */}
-                      {inq.phone ? (
+                      {inq.phone && (
                         <a
                           href={`tel:${formatCleanPhone(inq.phone)}`}
-                          className="p-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-[#008e97] border border-cyan-200/80 transition-all shadow-2xs hover:scale-105"
+                          className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl bg-[#008e97] hover:bg-[#00777f] active:bg-[#006e75] text-white font-bold text-xs shadow-xs transition-all active:scale-95"
                           title={`Chiama ${inq.phone}`}
                         >
-                          <Phone className="w-4 h-4" />
+                          <Phone className="w-4 h-4 shrink-0" />
+                          <span>Chiama</span>
                         </a>
-                      ) : null}
+                      )}
 
-                      {/* Invia Mail */}
                       <a
                         href={mailtoLink}
-                        className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition-all shadow-2xs hover:scale-105"
+                        className="inline-flex items-center justify-center min-w-[42px] min-h-[42px] p-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition-colors shadow-2xs"
                         title={`Invia email a ${inq.email}`}
                       >
                         <Mail className="w-4 h-4" />
                       </a>
+                    </div>
 
-                      {/* Pianifica in Agenda 1-Click */}
+                    {/* Azioni Gestione: Agenda, Elimina, Dettagli */}
+                    <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
                       {onScheduleInquiry && (
                         <button
                           type="button"
                           onClick={() => onScheduleInquiry(inq)}
-                          className="p-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 transition-all shadow-2xs hover:scale-105"
-                          title="Pianifica evento in Agenda collegato a questa richiesta"
+                          className="inline-flex items-center justify-center min-w-[42px] min-h-[42px] p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 transition-colors"
+                          title="Pianifica impegno in Agenda"
                         >
                           <CalendarPlus className="w-4 h-4" />
                         </button>
                       )}
 
-                      {/* Elimina */}
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmId(inq.id)}
-                        className="p-2 rounded-xl text-slate-400 hover:text-[#df0000] hover:bg-rose-50 transition-colors"
+                        className="inline-flex items-center justify-center min-w-[42px] min-h-[42px] p-2.5 rounded-xl text-slate-400 hover:text-[#df0000] hover:bg-rose-50 transition-colors"
                         title="Elimina richiesta"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
 
-                      {/* Tasto Espandi / Dettagli */}
                       <button
                         type="button"
                         onClick={() => toggleExpand(inq.id)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all ml-1"
+                        className="inline-flex items-center justify-center gap-1 min-h-[42px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all ml-1"
                         title="Visualizza o nascondi dettagli"
                       >
-                        <span className="text-[11px] hidden sm:inline">
-                          {isExpanded ? "Meno" : "Dettagli"}
-                        </span>
-                        {isExpanded ? (
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        )}
+                        <span>{isExpanded ? "Meno" : "Dettagli"}</span>
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   </div>

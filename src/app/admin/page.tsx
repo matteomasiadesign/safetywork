@@ -803,36 +803,25 @@ CREATE POLICY "Authenticated Upload Assets" ON storage.objects
       <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
         {/* Workspace Top Header Bar */}
         <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between shadow-2xs">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-              title="Apri menu sezioni"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-400 hidden sm:inline">Pannello Direzionale</span>
-                <span className="text-xs text-slate-300 hidden sm:inline">/</span>
-                <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-                  {activeTab === "inquiries" && "Richieste dal Sito"}
-                  {activeTab === "agenda" && "Agenda & Calendario"}
-                  {activeTab === "courses" && "Catalogo Corsi"}
-                  {activeTab === "categories" && "Categorie Formative"}
-                  {activeTab === "services" && "Servizi HSE"}
-                </h1>
-                {activeTab === "inquiries" && newInquiriesCount > 0 && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-[#df0000] text-white px-2 py-0.5 rounded-full animate-pulse">
-                    {newInquiriesCount} nuove
-                  </span>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="text-xs font-semibold text-slate-400 hidden sm:inline">Pannello Direzionale</span>
+            <span className="text-xs text-slate-300 hidden sm:inline">/</span>
+            <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight truncate">
+              {activeTab === "inquiries" && "Richieste dal Sito"}
+              {activeTab === "agenda" && "Agenda & Calendario"}
+              {activeTab === "courses" && "Catalogo Corsi"}
+              {activeTab === "categories" && "Categorie Formative"}
+              {activeTab === "services" && "Servizi HSE"}
+            </h1>
+            {activeTab === "inquiries" && newInquiriesCount > 0 && (
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#df0000] text-white px-2 py-0.5 rounded-full animate-pulse shrink-0">
+                {newInquiriesCount} nuove
+              </span>
+            )}
           </div>
 
-          {/* Top Global Status & Site Link */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Top Global Status, Site Link & Hamburger Menu (Destra su Mobile) */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-600 shadow-2xs">
               <span className={`w-2 h-2 rounded-full ${isSupabaseActive ? "bg-emerald-500" : "bg-amber-500"}`} />
               <span>{isSupabaseActive ? "Supabase Cloud" : "Storage Locale"}</span>
@@ -841,11 +830,22 @@ CREATE POLICY "Authenticated Upload Assets" ON storage.objects
             <Link
               to="/"
               target="_blank"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-[#e6f6f7] hover:text-[#008e97] text-slate-700 text-xs font-semibold border border-slate-200 transition-colors shadow-2xs"
+              className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-xl bg-slate-50 hover:bg-[#e6f6f7] hover:text-[#008e97] text-slate-700 text-xs font-semibold border border-slate-200 transition-colors shadow-2xs"
+              title="Visualizza Sito"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-[#008e97]" />
-              <span className="hidden md:inline">Visualizza Sito</span>
+              <ExternalLink className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#008e97]" />
+              <span className="hidden md:inline ml-1.5">Visualizza Sito</span>
             </Link>
+
+            {/* Hamburger Menu posizionato a destra per migliore ergonomia mobile */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 transition-colors"
+              title="Apri menu sezioni"
+              aria-label="Apri menu sezioni"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
