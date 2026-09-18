@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-cyan: #008e97;
+    --brand-orange: #f58220;
+    --brand-red: #df0000;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  ::selection {
+    background-color: #008e97;
+    color: #ffffff;
+  }
+}
+
+@layer utilities {
+  /* Angled geometric corners */
+  .tech-corner-br {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+  }
+  
+  .tech-corner-tl {
+    clip-path: polygon(16px 0, 100% 0, 100% 100%, 0 100%, 0 16px);
+  }
+
+  /* Engineering Millimeter Blueprint Grids & Technical Patterns */
+  .bg-tech-blueprint {
+    background-color: #ffffff;
+    background-image: 
+      linear-gradient(to right, rgba(0, 142, 151, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 142, 151, 0.08) 1px, transparent 1px),
+      linear-gradient(to right, rgba(0, 142, 151, 0.025) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 142, 151, 0.025) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+  }
+
+  .bg-tech-blueprint-slate {
+    background-color: #f8fafc;
+    background-image: 
+      linear-gradient(to right, rgba(0, 142, 151, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 142, 151, 0.07) 1px, transparent 1px),
+      linear-gradient(to right, rgba(148, 163, 184, 0.09) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148, 163, 184, 0.09) 1px, transparent 1px);
+    background-size: 64px 64px, 64px 64px, 16px 16px, 16px 16px;
+  }
+
+  /* Grid backgrounds */
+  .bg-grid-pattern {
+    background-size: 32px 32px;
+    background-image: 
+      linear-gradient(to right, rgba(0, 142, 151, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 142, 151, 0.07) 1px, transparent 1px);
+  }
+
+  .bg-dots-pattern {
+    background-image: radial-gradient(rgba(0, 142, 151, 0.18) 1.2px, transparent 1.2px);
+    background-size: 20px 20px;
+  }
+
+  .bg-grid-white {
+    background-size: 36px 36px;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+
+  /* Technical Hazard & Hatching patterns */
+  .tech-hazard-stripe {
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(223, 0, 0, 0.06),
+      rgba(223, 0, 0, 0.06) 10px,
+      transparent 10px,
+      transparent 20px
+    );
+  }
+
+  .tech-cyan-stripe {
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(0, 142, 151, 0.05),
+      rgba(0, 142, 151, 0.05) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+  }
+
+  /* Glassmorphic overlays */
+  .glass-pill {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .glass-pill-light {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+  }
+
+  .glass-card-dark {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Nascondi scrollbar cross-browser */
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .no-scrollbar,
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

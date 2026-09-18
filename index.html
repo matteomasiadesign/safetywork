@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="it" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Safety Work S.r.l.s. | Sicurezza e Igiene nei Luoghi di Lavoro</title>
+  <meta name="description" content="Società specializzata in consulenza, formazione accreditata D.Lgs. 81/08 e progettazione antincendio per la tutela della salute e sicurezza nei luoghi di lavoro." />
+  <meta name="theme-color" content="#008e97" />
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              cyan: {
+                DEFAULT: '#008e97',
+                hover: '#00777f',
+                dark: '#005e64',
+                light: '#e6f6f7',
+                border: '#b2e4e8',
+              },
+              orange: {
+                DEFAULT: '#f58220',
+                hover: '#df6f11',
+                dark: '#c35a00',
+                light: '#fff4ea',
+                border: '#ffd8b2',
+              },
+              red: {
+                DEFAULT: '#df0000',
+                hover: '#be0000',
+                light: '#fdf2f2',
+                border: '#fecaca',
+              },
+              dark: '#0b1320',
+              slate: '#1e293b',
+              light: '#f8fafc',
+              muted: '#64748b',
+            }
+          },
+          boxShadow: {
+            'tech-cyan': '0 0 20px -5px rgba(0, 142, 151, 0.3)',
+            'tech-orange': '0 0 20px -5px rgba(245, 130, 32, 0.35)',
+            'tech-card': '0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    .tech-grid {
+      background-image: linear-gradient(to right, rgba(0, 142, 151, 0.05) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(0, 142, 151, 0.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .tech-grid-dark {
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+  </style>
+</head>
+<body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- TOP BAR / ENVIRONMENT SWITCHER -->
+  <div class="bg-slate-950 text-slate-300 text-xs py-2 px-4 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+      <div class="flex items-center space-x-3">
+        <span class="inline-flex items-center gap-1.5 text-brand-cyan font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Conformità D.Lgs. 81/08 e s.m.i.
+        </span>
+        <span class="text-slate-600 hidden sm:inline">|</span>
+        <span class="text-slate-400 hidden sm:inline">Consulenza, Formazione e Progettazione</span>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="http://localhost:3000" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand-cyan/20 border border-brand-cyan/50 text-cyan-200 hover:bg-brand-cyan hover:text-white transition-all font-mono text-[11px]">
+          <i data-lucide="radio" class="w-3.5 h-3.5 text-emerald-400 animate-spin"></i>
+          <span>Apri Server Next.js: localhost:3000</span>
+        </a>
+        <a href="tel:+390287198240" class="inline-flex items-center gap-1.5 hover:text-white transition-colors">
+          <i data-lucide="phone-call" class="w-3.5 h-3.5 text-brand-orange"></i>
+          <span class="font-medium">+39 02 8719 8240</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        <!-- Brand Logo -->
+        <a href="#hero" class="flex items-center space-x-3 group">
+          <div class="relative w-11 h-11 bg-gradient-to-br from-brand-cyan to-brand-cyan-dark rounded-xl flex items-center justify-center shadow-tech-cyan group-hover:scale-105 transition-transform">
+            <i data-lucide="shield" class="w-6 h-6 text-white"></i>
+            <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-brand-orange rounded-full border-2 border-white"></div>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-xl font-extrabold tracking-tight text-slate-900 group-hover:text-brand-cyan transition-colors">
+              SAFETY<span class="text-brand-cyan">WORK</span>
+              <span class="text-xs font-bold text-brand-orange ml-1 bg-brand-orange-light px-1.5 py-0.5 rounded">S.r.l.s.</span>
+            </span>
+            <span class="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+              Sicurezza & Igiene nei Luoghi di Lavoro
+            </span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-700">
+          <a href="#corsi" class="hover:text-brand-cyan transition-colors">Corsi di Formazione</a>
+          <a href="#servizi" class="hover:text-brand-cyan transition-colors">Servizi Tecnici</a>
+          <a href="#chi-siamo" class="hover:text-brand-cyan transition-colors">Chi Siamo</a>
+          <a href="#contatti" class="hover:text-brand-cyan transition-colors">Contatti</a>
+        </nav>
+
+        <!-- CTA Action Buttons -->
+        <div class="hidden md:flex items-center space-x-3">
+          <a href="#contatti" class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-cyan hover:bg-brand-cyan-hover text-white text-sm font-semibold rounded-lg shadow-sm transition-all transform hover:-translate-y-0.5">
+            <i data-lucide="mail" class="w-4 h-4"></i>
+            <span>Richiedi Preventivo</span>
+          </a>
+          <a href="http://localhost:3000" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2.5 border border-slate-300 text-slate-700 hover:text-brand-cyan hover:border-brand-cyan text-sm font-semibold rounded-lg transition-all">
+            <i data-lucide="external-link" class="w-4 h-4 text-brand-cyan"></i>
+            <span>App Next.js</span>
+          </a>
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-600 hover:text-slate-900">
+          <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- Mobile Dropdown -->
+      <div id="mobileMenu" class="hidden md:hidden pb-6 pt-2 border-t border-slate-100 flex flex-col space-y-4 text-sm font-semibold text-slate-700">
+        <a href="#corsi" class="hover:text-brand-cyan">Corsi di Formazione</a>
+        <a href="#servizi" class="hover:text-brand-cyan">Servizi Tecnici</a>
+        <a href="#chi-siamo" class="hover:text-brand-cyan">Chi Siamo</a>
+        <a href="#contatti" class="hover:text-brand-cyan">Contatti</a>
+        <div class="pt-2 flex flex-col gap-2">
+          <a href="#contatti" class="w-full text-center py-2.5 bg-brand-cyan text-white rounded-lg">Richiedi Preventivo</a>
+          <a href="http://localhost:3000" target="_blank" class="w-full text-center py-2.5 border border-slate-300 rounded-lg">Apri Next.js App</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section id="hero" class="relative min-h-[85vh] flex items-center justify-center bg-slate-950 text-white overflow-hidden py-20 px-4 sm:px-6 lg:px-8">
+    <div class="absolute inset-0 tech-grid-dark opacity-60 pointer-events-none"></div>
+
+    <!-- Ambient glow spots -->
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-cyan/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-brand-orange/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Decorative Blueprint Vector Shapes -->
+    <svg class="absolute right-0 top-1/2 -translate-y-1/2 opacity-15 w-[500px] h-[500px] hidden lg:block pointer-events-none" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="200" cy="200" r="190" stroke="#008e97" stroke-width="1" stroke-dasharray="4 4" />
+      <circle cx="200" cy="200" r="140" stroke="#008e97" stroke-width="1.5" />
+      <circle cx="200" cy="200" r="80" stroke="#f58220" stroke-width="1" stroke-dasharray="6 6" />
+      <line x1="200" y1="0" x2="200" y2="400" stroke="#008e97" stroke-width="0.5" />
+      <line x1="0" y1="200" x2="400" y2="200" stroke="#008e97" stroke-width="0.5" />
+      <polygon points="200,60 321,270 79,270" stroke="#f58220" stroke-width="1" />
+    </svg>
+
+    <div class="relative z-10 max-w-5xl mx-auto text-center flex flex-col items-center">
+      <!-- Badge D.Lgs. 81/08 -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-brand-cyan/40 text-cyan-200 text-xs font-semibold uppercase tracking-wider mb-8 shadow-tech-cyan">
+        <i data-lucide="shield-check" class="w-4 h-4 text-brand-cyan"></i>
+        <span>Conformità Integrata D.Lgs. 81/08 & Certificazioni di Legge</span>
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight text-white max-w-4xl">
+        Consulenza, Formazione e Progettazione per la{" "}
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-cyan via-teal-300 to-brand-orange">
+          Sicurezza sul Lavoro
+        </span>
+      </h1>
+
+      <!-- Value Proposition -->
+      <p class="mt-6 text-lg sm:text-xl text-slate-300 max-w-3xl leading-relaxed font-light">
+        Proteggiamo la tua impresa e il tuo capitale umano. Affianchiamo datori di lavoro, RSPP e addetti con valutazioni tecniche dei rischi, corsi certificati e progettazione antincendio su misura.
+      </p>
+
+      <!-- Technical Key Indicators -->
+      <div class="mt-8 flex flex-wrap justify-center gap-4 text-xs font-medium text-slate-300">
+        <div class="flex items-center gap-2 bg-slate-900/80 px-3.5 py-2 rounded-lg border border-slate-800">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-brand-cyan"></i>
+          <span>Redazione e Revisione DVR</span>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-900/80 px-3.5 py-2 rounded-lg border border-slate-800">
+          <i data-lucide="award" class="w-4 h-4 text-brand-orange"></i>
+          <span>Corsi Accreditati e Tracciati</span>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-900/80 px-3.5 py-2 rounded-lg border border-slate-800">
+          <i data-lucide="file-text" class="w-4 h-4 text-brand-cyan"></i>
+          <span>Pratiche SCIA Antincendio</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+        <a href="#contatti" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-brand-orange hover:bg-brand-orange-hover text-white text-base font-bold rounded-xl shadow-lg shadow-brand-orange/20 transition-all transform hover:-translate-y-0.5">
+          <span>Richiedi una Consulenza Gratuita</span>
+          <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        </a>
+        <a href="#corsi" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 bg-slate-900/80 hover:bg-slate-800 text-slate-100 text-base font-medium rounded-xl border border-slate-700 hover:border-brand-cyan/60 transition-all">
+          <span>Esplora il Catalogo Corsi</span>
+          <i data-lucide="arrow-down" class="w-4 h-4 text-brand-cyan animate-bounce"></i>
+        </a>
+      </div>
+
+      <!-- Key Numbers Strip -->
+      <div class="mt-16 pt-10 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-6 text-center w-full max-w-4xl">
+        <div>
+          <div class="text-3xl font-extrabold text-white">15+</div>
+          <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Anni di Esperienza</div>
+        </div>
+        <div>
+          <div class="text-3xl font-extrabold text-brand-cyan">1.200+</div>
+          <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Aziende Tutelate</div>
+        </div>
+        <div>
+          <div class="text-3xl font-extrabold text-brand-orange">25.000+</div>
+          <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Lavoratori Formati</div>
+        </div>
+        <div>
+          <div class="text-3xl font-extrabold text-emerald-400">99.4%</div>
+          <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Clienti Soddisfatti</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CORSI SECTION -->
+  <section id="corsi" class="py-20 bg-slate-50 border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-14">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan text-xs font-bold uppercase tracking-wider mb-3">
+          <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+          <span>Catalogo Formativo Certificato</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Corsi di Formazione in Sicurezza sul Lavoro
+        </h2>
+        <p class="mt-4 text-slate-600 text-base leading-relaxed">
+          Percorsi formativi conformi agli Accordi Stato-Regioni e al D.Lgs. 81/08 con rilascio immediato di attestati aventi validità legale su tutto il territorio nazionale.
+        </p>
+      </div>
+
+      <!-- Categories Filter Tabs -->
+      <div class="flex flex-wrap justify-center gap-2 mb-10">
+        <button class="filter-btn active px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-brand-cyan text-white shadow-sm" data-category="all">Tutti i Corsi</button>
+        <button class="filter-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-slate-700 border border-slate-200 hover:border-brand-cyan" data-category="datori">Datori & RSPP</button>
+        <button class="filter-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-slate-700 border border-slate-200 hover:border-brand-cyan" data-category="emergenze">Emergenze & Antincendio</button>
+        <button class="filter-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-slate-700 border border-slate-200 hover:border-brand-cyan" data-category="lavoratori">Lavoratori & Preposti</button>
+        <button class="filter-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-slate-700 border border-slate-200 hover:border-brand-cyan" data-category="attrezzature">Attrezzature & Macchine</button>
+      </div>
+
+      <!-- Course Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Course 1 -->
+        <div class="course-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-tech-card hover:shadow-xl transition-all flex flex-col" data-cat="datori">
+          <div class="p-6 border-b border-slate-100 flex-grow">
+            <div class="flex items-center justify-between mb-3">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-cyan-light text-brand-cyan border border-brand-cyan-border">
+                D.Lgs. 81/08 Art. 34
+              </span>
+              <span class="text-xs font-mono text-slate-400">16 Ore</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 hover:text-brand-cyan transition-colors">
+              RSPP Datore di Lavoro (Rischio Basso, Medio, Alto)
+            </h3>
+            <p class="mt-3 text-sm text-slate-600 line-clamp-3">
+              Percorso normato per assumere direttamente l’incarico di Responsabile del Servizio di Prevenzione e Protezione nella propria azienda.
+            </p>
+            <div class="mt-4 pt-4 border-t border-slate-100 space-y-1.5 text-xs text-slate-500">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-cyan"></i>
+                <span>Validità: <strong>5 anni</strong></span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="video" class="w-3.5 h-3.5 text-brand-cyan"></i>
+                <span>Modalità: <strong>Aula / Videoconferenza sincrona</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Attestato Ufficiale</span>
+            <a href="http://localhost:3000/corsi/rspp-datore-di-lavoro" target="_blank" class="inline-flex items-center gap-1 text-sm font-bold text-brand-cyan hover:text-brand-cyan-dark">
+              <span>Scheda Corso</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Course 2 -->
+        <div class="course-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-tech-card hover:shadow-xl transition-all flex flex-col" data-cat="emergenze">
+          <div class="p-6 border-b border-slate-100 flex-grow">
+            <div class="flex items-center justify-between mb-3">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-orange-light text-brand-orange border border-brand-orange-border">
+                D.M. 02/09/2021
+              </span>
+              <span class="text-xs font-mono text-slate-400">4-16 Ore</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 hover:text-brand-orange transition-colors">
+              Addetto Antincendio ed Emergenze (Livello 1, 2, 3)
+            </h3>
+            <p class="mt-3 text-sm text-slate-600 line-clamp-3">
+              Corso teorico-pratico per gli addetti alla prevenzione incendi, lotta antincendio e gestione dell'evacuazione aziendale con prova pratica su fuoco vivo.
+            </p>
+            <div class="mt-4 pt-4 border-t border-slate-100 space-y-1.5 text-xs text-slate-500">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-orange"></i>
+                <span>Validità: <strong>5 anni</strong></span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="flame" class="w-3.5 h-3.5 text-brand-orange"></i>
+                <span>Prova pratica: <strong>Spegnimento vasca reale</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Attestato Ufficiale</span>
+            <a href="http://localhost:3000/corsi/addetto-antincendio-emergenze" target="_blank" class="inline-flex items-center gap-1 text-sm font-bold text-brand-orange hover:text-brand-orange-hover">
+              <span>Scheda Corso</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Course 3 -->
+        <div class="course-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-tech-card hover:shadow-xl transition-all flex flex-col" data-cat="emergenze">
+          <div class="p-6 border-b border-slate-100 flex-grow">
+            <div class="flex items-center justify-between mb-3">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-red-light text-brand-red border border-brand-red-border">
+                D.M. 388/03 Art. 45
+              </span>
+              <span class="text-xs font-mono text-slate-400">12-16 Ore</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 hover:text-brand-red transition-colors">
+              Addetto Primo Soccorso Aziendale (Gruppo A, B, C)
+            </h3>
+            <p class="mt-3 text-sm text-slate-600 line-clamp-3">
+              Addestramento pratico e nozioni mediche di base per la gestione tempestiva delle emergenze sanitarie, BLS e uso del defibrillatore DAE.
+            </p>
+            <div class="mt-4 pt-4 border-t border-slate-100 space-y-1.5 text-xs text-slate-500">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-red"></i>
+                <span>Validità: <strong>3 anni</strong></span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="activity" class="w-3.5 h-3.5 text-brand-red"></i>
+                <span>Pratica: <strong>Manichino didattico + DAE</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Attestato Ufficiale</span>
+            <a href="http://localhost:3000/corsi/primo-soccorso-aziendale" target="_blank" class="inline-flex items-center gap-1 text-sm font-bold text-brand-cyan hover:text-brand-cyan-dark">
+              <span>Scheda Corso</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Course 4 -->
+        <div class="course-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-tech-card hover:shadow-xl transition-all flex flex-col" data-cat="lavoratori">
+          <div class="p-6 border-b border-slate-100 flex-grow">
+            <div class="flex items-center justify-between mb-3">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-cyan-light text-brand-cyan border border-brand-cyan-border">
+                D.Lgs. 81/08 Art. 37
+              </span>
+              <span class="text-xs font-mono text-slate-400">8-16 Ore</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 hover:text-brand-cyan transition-colors">
+              Formazione Lavoratori (Generale e Specifica)
+            </h3>
+            <p class="mt-3 text-sm text-slate-600 line-clamp-3">
+              Corso fondamentale per tutti i lavoratori assunti in conformità all'Accordo Stato-Regioni. Suddiviso per Rischio Basso, Medio e Alto.
+            </p>
+            <div class="mt-4 pt-4 border-t border-slate-100 space-y-1.5 text-xs text-slate-500">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-cyan"></i>
+                <span>Validità: <strong>5 anni</strong></span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="laptop" class="w-3.5 h-3.5 text-brand-cyan"></i>
+                <span>Modalità: <strong>E-learning + Aula sincrona</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Attestato Ufficiale</span>
+            <a href="http://localhost:3000/corsi/formazione-lavoratori-generale-specifica" target="_blank" class="inline-flex items-center gap-1 text-sm font-bold text-brand-cyan hover:text-brand-cyan-dark">
+              <span>Scheda Corso</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Course 5 -->
+        <div class="course-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-tech-card hover:shadow-xl transition-all flex flex-col" data-cat="attrezzature">
+          <div class="p-6 border-b border-slate-100 flex-grow">
+            <div class="flex items-center justify-between mb-3">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-orange-light text-brand-orange border border-brand-orange-border">
+                Accordo Stato-Regioni 2012
+              </span>
+              <span class="text-xs font-mono text-slate-400">12 Ore</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 hover:text-brand-orange transition-colors">
+              Patentino Muletto / Carrelli Elevatori Semoventi
+            </h3>
+            <p class="mt-3 text-sm text-slate-600 line-clamp-3">
+              Abilitazione teorico-pratica con guida reale di carrelli industriali su campo prove certificato, manovre con carichi e verifiche di stabilità.
+            </p>
+            <div class="mt-4 pt-4 border-t border-slate-100 space-y-1.5 text-xs text-slate-500">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-orange"></i>
+                <span>Validità: <strong>5 anni</strong></span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="truck" class="w-3.5 h-3.5 text-brand-orange"></i>
+                <span>Pratica: <strong>Percorso ostacoli & carico reale</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Patentino UE</span>
+            <a href="http://localhost:3000/corsi/patentino-carrelli-elevatori-muletto" target="_blank" class="inline-flex items-center gap-1 text-sm font-bold text-brand-cyan hover:text-brand-cyan-dark">
+              <span>Scheda Corso</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Course 6 -->
+        <div class="course-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-tech-card hover:shadow-xl transition-all flex flex-col" data-cat="lavoratori">
+          <div class="p-6 border-b border-slate-100 flex-grow">
+            <div class="flex items-center justify-between mb-3">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-cyan-light text-brand-cyan border border-brand-cyan-border">
+                D.Lgs. 81/08 Art. 37
+              </span>
+              <span class="text-xs font-mono text-slate-400">8 Ore</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 hover:text-brand-cyan transition-colors">
+              Preposto alla Sicurezza (Legge 215/2021)
+            </h3>
+            <p class="mt-3 text-sm text-slate-600 line-clamp-3">
+              Formazione per capire le responsabilità e i poteri di vigilanza e interruzione attività attribuiti dalla normativa al preposto.
+            </p>
+            <div class="mt-4 pt-4 border-t border-slate-100 space-y-1.5 text-xs text-slate-500">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-cyan"></i>
+                <span>Validità: <strong>2 anni (Agg. obbligatorio)</strong></span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="users" class="w-3.5 h-3.5 text-brand-cyan"></i>
+                <span>Destinatari: <strong>Capi squadra, responsabili</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Attestato Ufficiale</span>
+            <a href="http://localhost:3000/corsi/corso-preposto-sicurezza" target="_blank" class="inline-flex items-center gap-1 text-sm font-bold text-brand-cyan hover:text-brand-cyan-dark">
+              <span>Scheda Corso</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVIZI TECNICI -->
+  <section id="servizi" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-orange/10 border border-brand-orange/30 text-brand-orange text-xs font-bold uppercase tracking-wider mb-3">
+          <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
+          <span>I Nostri Pilastri</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Consulenza Tecnica e Ingegneria della Prevenzione
+        </h2>
+        <p class="mt-4 text-slate-600 text-base leading-relaxed">
+          Affianchiamo i datori di lavoro nella gestione completa e continuativa degli adempimenti cogenti, riducendo i rischi sanzionatori e tutelando la salute dei collaboratori.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <!-- Service 1 -->
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 hover:border-brand-cyan hover:bg-white transition-all shadow-sm group">
+          <div class="w-12 h-12 rounded-xl bg-brand-cyan/10 text-brand-cyan flex items-center justify-center mb-5 group-hover:bg-brand-cyan group-hover:text-white transition-colors">
+            <i data-lucide="file-check-2" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Valutazione Rischi & DVR</h3>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Redazione di Documenti di Valutazione Rischi generali e specifici (Rumore, Vibrazioni, ROA, Campi Elettromagnetici, Rischio Chimico e ATEX).
+          </p>
+        </div>
+
+        <!-- Service 2 -->
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 hover:border-brand-orange hover:bg-white transition-all shadow-sm group">
+          <div class="w-12 h-12 rounded-xl bg-brand-orange/10 text-brand-orange flex items-center justify-center mb-5 group-hover:bg-brand-orange group-hover:text-white transition-colors">
+            <i data-lucide="user-check" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Incarico RSPP Esterno</h3>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Assunzione del ruolo di Responsabile del Servizio di Prevenzione e Protezione esterno con sopralluoghi periodici e gestione continua.
+          </p>
+        </div>
+
+        <!-- Service 3 -->
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 hover:border-brand-red hover:bg-white transition-all shadow-sm group">
+          <div class="w-12 h-12 rounded-xl bg-brand-red/10 text-brand-red flex items-center justify-center mb-5 group-hover:bg-brand-red group-hover:text-white transition-colors">
+            <i data-lucide="flame" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Antincendio & SCIA VVF</h3>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Progettazione antincendio secondo il Codice di Prevenzione Incendi (D.M. 03/08/2015), rilascio CPI e piani di evacuazione ed emergenza.
+          </p>
+        </div>
+
+        <!-- Service 4 -->
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 hover:border-emerald-500 hover:bg-white transition-all shadow-sm group">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-5 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+            <i data-lucide="heart-pulse" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Medicina del Lavoro</h3>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Nomina Medico Competente, predisposizione del piano di sorveglianza sanitaria, visite mediche periodiche e rilascio giudizi di idoneità.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHI SIAMO -->
+  <section id="chi-siamo" class="py-20 bg-slate-950 text-white relative overflow-hidden">
+    <div class="absolute inset-0 tech-grid-dark opacity-30 pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-bold uppercase tracking-wider mb-4">
+            <i data-lucide="building" class="w-3.5 h-3.5"></i>
+            <span>Chi Siamo</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Safety Work S.r.l.s. <br />
+            <span class="text-brand-cyan">Competenza Tecnica e Rigore Normativo</span>
+          </h2>
+          <p class="mt-6 text-slate-300 leading-relaxed">
+            Nata dall'unione di ingegneri, tecnici della prevenzione e medici del lavoro, <strong>Safety Work S.r.l.s.</strong> opera come centro d'eccellenza per la sicurezza nei luoghi di lavoro.
+          </p>
+          <p class="mt-4 text-slate-400 leading-relaxed">
+            Non offriamo semplicemente "fogli di carta", ma costruiamo una reale cultura della sicurezza che ottimizza i processi aziendali, riduce i costi legati ai fermi macchina e agli infortuni e garantisce la massima serenità al datore di lavoro.
+          </p>
+
+          <div class="mt-8 space-y-3">
+            <div class="flex items-center gap-3">
+              <i data-lucide="check" class="w-5 h-5 text-brand-cyan"></i>
+              <span class="text-sm text-slate-200">Docenti abilitati con comprovata esperienza sul campo</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <i data-lucide="check" class="w-5 h-5 text-brand-cyan"></i>
+              <span class="text-sm text-slate-200">Aggiornamento normativo tempestivo su leggi e sentenze di Cassazione</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <i data-lucide="check" class="w-5 h-5 text-brand-cyan"></i>
+              <span class="text-sm text-slate-200">Piattaforma e-learning certificata SCORM con tracciamento biometrico</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative bg-slate-900/90 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+          <h3 class="text-xl font-bold text-white mb-6">Perché scegliere Safety Work</h3>
+          <div class="space-y-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-brand-cyan/20 text-brand-cyan flex items-center justify-center flex-shrink-0">
+                <i data-lucide="shield-alert" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-semibold text-white">Zero Rischi Sanzionatori</h4>
+                <p class="text-sm text-slate-400 mt-1">Audit preliminari per verificare l'adeguatezza della documentazione aziendale ed evitare sanzioni pecuniarie o penali.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-brand-orange/20 text-brand-orange flex items-center justify-center flex-shrink-0">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-semibold text-white">Interventi Rapidi</h4>
+                <p class="text-sm text-slate-400 mt-1">Sopralluoghi tecnici e redazione documenti con tempi certi di consegna per soddisfare richieste urgenti di committenti o enti di controllo.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-semibold text-white">Scadenziario Digitale</h4>
+                <p class="text-sm text-slate-400 mt-1">Monitoriamo noi le scadenze dei tuoi attestati e delle verifiche periodiche, avvisandoti con congruo anticipo.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTATTI SECTION -->
+  <section id="contatti" class="py-20 bg-slate-50 border-t border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <!-- Contact Info -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan text-xs font-bold uppercase tracking-wider">
+            <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+            <span>Parla con un Tecnico</span>
+          </div>
+          <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Richiedi un Check-up Gratuito o un Preventivo
+          </h2>
+          <p class="text-slate-600 leading-relaxed text-sm">
+            I nostri tecnici sono a tua disposizione per un colloquio orientativo o per un preventivo personalizzato per la formazione del tuo personale o la consulenza tecnica.
+          </p>
+
+          <div class="space-y-4 pt-4 text-sm text-slate-700">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-brand-cyan-light text-brand-cyan flex items-center justify-center flex-shrink-0">
+                <i data-lucide="map-pin" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="font-bold text-slate-900">Sede Operativa:</div>
+                <div>Via della Sicurezza 42, 20121 Milano (MI)</div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-brand-orange-light text-brand-orange flex items-center justify-center flex-shrink-0">
+                <i data-lucide="phone" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="font-bold text-slate-900">Telefono Diretto:</div>
+                <div><a href="tel:+390287198240" class="text-brand-orange hover:underline">+39 02 8719 8240</a></div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="mail" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="font-bold text-slate-900">Email & PEC:</div>
+                <div>info@safetyworks.it | safetyworks@pec.it</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Contact Form -->
+        <div class="lg:col-span-7 bg-white rounded-2xl p-8 border border-slate-200 shadow-tech-card">
+          <form id="contactForm" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nome e Cognome *</label>
+                <input type="text" required placeholder="Mario Rossi" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-cyan text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Ragione Sociale Azienda</label>
+                <input type="text" placeholder="Rossi Meccanica S.r.l." class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-cyan text-sm" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Email Aziendale *</label>
+                <input type="email" required placeholder="mario.rossi@azienda.it" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-cyan text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Telefono / Cellulare *</label>
+                <input type="tel" required placeholder="+39 333 1234567" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-cyan text-sm" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Settore d'Interesse</label>
+              <select class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-cyan text-sm bg-white">
+                <option value="corsi">Corsi di Formazione e Aggiornamento</option>
+                <option value="dvr">Valutazione dei Rischi / Redazione DVR</option>
+                <option value="rspp">Nomina RSPP Esterno</option>
+                <option value="antincendio">Pratiche Antincendio e CPI</option>
+                <option value="medicina">Medicina del Lavoro</option>
+                <option value="altro">Altro quesito o richiesta tecnica</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Messaggio o Descrizione Esigenza</label>
+              <textarea rows="4" placeholder="Indicare il numero di lavoratori o la tipologia di consulenza richiesta..." class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-cyan text-sm"></textarea>
+            </div>
+
+            <div class="flex items-start gap-2 pt-1">
+              <input type="checkbox" id="privacy" required class="mt-1" />
+              <label for="privacy" class="text-xs text-slate-500">
+                Dichiaro di aver preso visione dell'informativa privacy ai sensi del Regolamento UE 2016/679 (GDPR) e acconsento al trattamento dei dati.
+              </label>
+            </div>
+
+            <button type="submit" class="w-full py-3.5 bg-brand-cyan hover:bg-brand-cyan-hover text-white font-bold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2">
+              <i data-lucide="send" class="w-4 h-4"></i>
+              <span>Invia Richiesta di Contatto</span>
+            </button>
+            <div id="formFeedback" class="hidden p-3 rounded-lg text-sm text-center font-medium"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-950 text-slate-300 pt-16 pb-12 border-t border-slate-800 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
+        <!-- Colonna Brand -->
+        <div class="space-y-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 bg-brand-cyan rounded-lg flex items-center justify-center">
+              <i data-lucide="shield" class="w-5 h-5 text-white"></i>
+            </div>
+            <span class="text-lg font-extrabold text-white">
+              SAFETY<span class="text-brand-cyan">WORK</span>
+              <span class="text-xs text-brand-orange ml-1">S.r.l.s.</span>
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Consulenza strategica, ingegneria della prevenzione e formazione accreditata conforme al D.Lgs. 81/08.
+          </p>
+          <div class="text-xs text-slate-500 space-y-1">
+            <div>P.IVA / C.F.: <strong>IT12345678901</strong></div>
+            <div>PEC: <strong>safetyworks@pec.it</strong></div>
+          </div>
+        </div>
+
+        <!-- Colonna Corsi -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-white mb-4">Corsi Principali</h4>
+          <ul class="space-y-2 text-xs text-slate-400">
+            <li><a href="#corsi" class="hover:text-brand-cyan transition-colors">Corso RSPP Datori di Lavoro</a></li>
+            <li><a href="#corsi" class="hover:text-brand-cyan transition-colors">Rappresentante Lavoratori RLS</a></li>
+            <li><a href="#corsi" class="hover:text-brand-cyan transition-colors">Addetto Antincendio Livello 1, 2, 3</a></li>
+            <li><a href="#corsi" class="hover:text-brand-cyan transition-colors">Primo Soccorso Aziendale</a></li>
+            <li><a href="#corsi" class="hover:text-brand-cyan transition-colors">Patentino Carrelli Elevatori</a></li>
+          </ul>
+        </div>
+
+        <!-- Colonna Servizi -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-white mb-4">Servizi Tecnici</h4>
+          <ul class="space-y-2 text-xs text-slate-400">
+            <li><a href="#servizi" class="hover:text-brand-cyan transition-colors">Redazione e Revisione DVR</a></li>
+            <li><a href="#servizi" class="hover:text-brand-cyan transition-colors">Incarico RSPP Esterno</a></li>
+            <li><a href="#servizi" class="hover:text-brand-cyan transition-colors">Progettazione Antincendio & SCIA</a></li>
+            <li><a href="#servizi" class="hover:text-brand-cyan transition-colors">Medicina del Lavoro & Sorveglianza</a></li>
+            <li><a href="#servizi" class="hover:text-brand-cyan transition-colors">Valutazione Rischi Specifici</a></li>
+          </ul>
+        </div>
+
+        <!-- Colonna Info Rapide & Switch -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-white mb-4">Accesso Sviluppatore</h4>
+          <p class="text-xs text-slate-400 mb-3">
+            L'applicazione web completa è attiva in locale con Next.js 14, React e Supabase.
+          </p>
+          <a href="http://localhost:3000" target="_blank" class="inline-flex items-center gap-2 w-full justify-center px-4 py-2.5 rounded-lg bg-slate-900 border border-brand-cyan text-brand-cyan hover:bg-brand-cyan hover:text-white text-xs font-semibold transition-all">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            <span>Apri localhost:3000</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+        <div>© 2026 Safety Work S.r.l.s. Tutti i diritti riservati.</div>
+        <div class="flex space-x-6">
+          <a href="#" class="hover:text-slate-400">Privacy Policy</a>
+          <a href="#" class="hover:text-slate-400">Cookie Policy</a>
+          <a href="#" class="hover:text-slate-400">Note Legali</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Scripts -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Mobile menu toggle
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileBtn && mobileMenu) {
+      mobileBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+      });
+    }
+
+    // Category filter for courses
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const courseCards = document.querySelectorAll('.course-card');
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => {
+          b.classList.remove('active', 'bg-brand-cyan', 'text-white');
+          b.classList.add('bg-white', 'text-slate-700');
+        });
+        btn.classList.add('active', 'bg-brand-cyan', 'text-white');
+        btn.classList.remove('bg-white', 'text-slate-700');
+
+        const category = btn.getAttribute('data-category');
+        courseCards.forEach(card => {
+          if (category === 'all' || card.getAttribute('data-cat') === category) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Form submission feedback
+    const contactForm = document.getElementById('contactForm');
+    const formFeedback = document.getElementById('formFeedback');
+    if (contactForm && formFeedback) {
+      contactForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        formFeedback.className = 'p-3 rounded-lg text-sm text-center font-medium bg-emerald-100 text-emerald-800 border border-emerald-300';
+        formFeedback.innerHTML = '✓ Richiesta inviata con successo! Un nostro tecnico della sicurezza ti ricontatterà entro 24 ore.';
+        formFeedback.classList.remove('hidden');
+        contactForm.reset();
+      });
+    }
+  </script>
+</body>
+</html>
+
