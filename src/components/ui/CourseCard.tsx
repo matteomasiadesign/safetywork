@@ -1,13 +1,18 @@
 import React from "react";
 import Link from "@/components/ui/Link";
-import { Clock, Lock, MapPin, ArrowRight } from "lucide-react";
+import { Clock, Lock, MapPin, ArrowRight, Monitor, Layers, CalendarDays } from "lucide-react";
 import { Course } from "@/lib/types/database";
+import { formatEditionDates, modeLabel, normalizeMode, upcomingEditions } from "@/lib/courses/format";
 
 interface CourseCardProps {
   course: Course;
 }
 
 export default function CourseCard({ course }: CourseCardProps) {
+  const mode = normalizeMode(course.mode);
+  const ModeIcon = mode === "online" ? Monitor : mode === "misto" ? Layers : MapPin;
+  const nextEdition = upcomingEditions(course.editions)[0];
+
   const fallbackImage =
     "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80";
 
@@ -42,13 +47,23 @@ export default function CourseCard({ course }: CourseCardProps) {
               {course.category.name}
             </span>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
-              <MapPin className="w-3 h-3 text-slate-300 shrink-0" />
-              <span>{course.location ? course.location : (course.mode.toLowerCase().includes("aula") ? "In Presenza" : "In Sede / Online")}</span>
+              <ModeIcon className="w-3 h-3 text-slate-300 shrink-0" />
+              <span>{modeLabel(course.mode)}</span>
             </div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
               <Clock className="w-3 h-3 text-[#008e97] shrink-0" />
               <span>{course.duration_hours} Ore</span>
             </div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
+              <CalendarDays className="w-3 h-3 text-[#f58220] shrink-0" />
+              <span>{nextEdition ? formatEditionDates(nextEdition, { short: true }) : "Date da definire"}</span>
+            </div>
+            {nextEdition?.location && mode !== "online" && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
+                <MapPin className="w-3 h-3 text-[#df0000] shrink-0" />
+                <span>{nextEdition.location}</span>
+              </div>
+            )}
             {!course.is_open_for_enrollment && (
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/80 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
                 <Lock className="w-3 h-3 text-[#f58220] shrink-0" />

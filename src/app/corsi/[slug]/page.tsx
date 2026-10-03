@@ -9,6 +9,7 @@ import {
   Clock,
   BookOpen,
   Calendar,
+  CalendarDays,
   ShieldCheck,
   ArrowLeft,
   CheckCircle,
@@ -21,6 +22,7 @@ import {
 import { COMPANY_CONFIG } from "@/config/company";
 import { getSiteContent } from "@/lib/data/content";
 import { companyContacts } from "@/lib/content/format";
+import { formatEditionDates, modeLabel, normalizeMode, upcomingEditions } from "@/lib/courses/format";
 
 interface PageProps {
   params: {
@@ -65,6 +67,9 @@ export default async function CourseDetailPage({ params }: PageProps) {
   }
 
   const contacts = companyContacts(await getSiteContent());
+  const mode = normalizeMode(course.mode);
+  const editions = upcomingEditions(course.editions);
+  const nextEdition = editions[0];
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -123,7 +128,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15">
                   <BookOpen className="w-4 h-4 text-[#f58220]" />
-                  <span>Modalità: {course.mode}</span>
+                  <span>Modalità: {modeLabel(course.mode)}</span>
                 </div>
 
                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15">
@@ -133,7 +138,20 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15">
                   <MapPin className="w-4 h-4 text-emerald-400" />
-                  <span>Sede: {course.location || COMPANY_CONFIG.headquarters.city}</span>
+                  <span>
+                    {mode === "online"
+                      ? "Sede: online"
+                      : nextEdition?.location
+                      ? `Sede: ${nextEdition.location}`
+                      : "Sede: da definire"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15">
+                  <CalendarDays className="w-4 h-4 text-[#f58220]" />
+                  <span>
+                    {nextEdition ? `Prossima data: ${formatEditionDates(nextEdition)}` : "Date da definire"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -145,6 +163,47 @@ export default async function CourseDetailPage({ params }: PageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             {/* Left Column: Syllabus & Details */}
             <div className="lg:col-span-7 space-y-8">
+              {/* Date, sedi e modalità */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs">
+                <h2 className="text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
+                  <CalendarDays className="w-5 h-5 text-[#008e97]" />
+                  <span>Date e sedi</span>
+                </h2>
+                <p className="text-xs text-slate-500 mb-4">
+                  Modalità: <strong className="text-slate-700">{modeLabel(course.mode)}</strong>
+                  {mode === "misto" && " — una parte in presenza e una parte online."}
+                  {mode === "online" && " — il corso si svolge a distanza."}
+                </p>
+
+                {editions.length > 0 ? (
+                  <ul className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
+                    {editions.map((edition) => (
+                      <li key={edition.id} className="px-4 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+                        <span className="text-sm font-bold text-slate-900">{formatEditionDates(edition)}</span>
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                          <MapPin className="w-3.5 h-3.5 text-[#df0000] shrink-0" />
+                          <span>
+                            {mode === "online"
+                              ? "Online"
+                              : edition.location
+                              ? mode === "misto"
+                                ? `${edition.location} (+ parte online)`
+                                : edition.location
+                              : "Sede da definire"}
+                          </span>
+                        </span>
+                        {edition.notes && <span className="text-[11px] text-slate-500 sm:basis-full">{edition.notes}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-600">
+                    Le date di questo corso sono in fase di definizione. Invia la richiesta o chiamaci: ti
+                    aggiorneremo appena disponibili.
+                  </div>
+                )}
+              </div>
+
               {/* Programma Formativo */}
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs">
                 <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -210,7 +269,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
             <div className="lg:col-span-5">
               <div className="sticky top-[88px]">
                 {course.is_open_for_enrollment ? (
-                  <CourseBookingForm course={course} phoneHref={contacts.phoneHref} />
+                  <CourseBookingForm course={course} phoneHref={contacts.phoneHref} editions={editions} />
                 ) : (
                   <div className="bg-white border border-slate-200 rounded-3xl shadow-lg p-8 text-center space-y-4">
                     <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">

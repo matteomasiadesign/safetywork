@@ -36,7 +36,7 @@ export const CONTENT_DEFAULTS = {
   "home.courses.badge": "Scopri i corsi disponibili",
   "home.courses.title": "Corsi in Programma",
   "home.courses.subtitle":
-    "Sessioni formative confermate con posti disponibili in tempo reale. Seleziona una scheda per consultare i moduli didattici e bloccare direttamente la tua partecipazione.",
+    "Corsi disponibili tramite Safety Works. Seleziona una scheda per consultare programma, modalità, date e sedi e inviare la tua richiesta di iscrizione.",
 
   // ------------------------------------------------------------ home: chi siamo
   "home.about.image": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=2000&auto=format&fit=crop&q=80",

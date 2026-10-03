@@ -159,7 +159,7 @@ export default function InquiriesManager({
     
     const body = `Gentile ${inquiry.name},\n\n` +
       `La ringraziamo per averci contattato tramite il portale Safety Works S.r.l.s.\n\n` +
-      (inquiry.courseTitle ? `In merito alla Sua richiesta per il corso "${inquiry.courseTitle}" (${inquiry.participantsCount || 1} partecipanti):\n` : "") +
+      (inquiry.courseTitle ? `In merito alla Sua richiesta per il corso "${inquiry.courseTitle}" (${inquiry.participantsCount || 1} partecipanti)${inquiry.editionLabel ? `, data indicata: ${inquiry.editionLabel}` : ""}:\n` : "") +
       `Restiamo a completa disposizione per definire le date del corso, i dettagli logistici e le modalità di iscrizione.\n\n` +
       `Cordiali saluti,\n` +
       `Ufficio Formazione & Consulenza HSE\n` +
@@ -475,6 +475,9 @@ export default function InquiriesManager({
                                 👥 {inq.participantsCount} {inq.participantsCount === 1 ? "partecipante" : "partecipanti"}
                               </span>
                             )}
+                            {inq.editionLabel && (
+                              <span className="font-semibold text-[#008e97]">• 📅 {inq.editionLabel}</span>
+                            )}
                             {inq.preferredMode && (
                               <span>• {inq.preferredMode}</span>
                             )}
@@ -617,6 +620,16 @@ export default function InquiriesManager({
                           </button>
                         )}
                       </div>
+
+                      {/* Data del corso scelta dal cliente */}
+                      {inq.editionLabel && (
+                        <div className="p-3 rounded-xl bg-[#e6f6f7] border border-[#008e97]/30 text-xs text-slate-800">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#008e97] mb-1">
+                            Data richiesta dal cliente:
+                          </div>
+                          <p className="font-semibold">{inq.editionLabel}</p>
+                        </div>
+                      )}
 
                       {/* Messaggio del cliente se presente */}
                       {inq.message && (

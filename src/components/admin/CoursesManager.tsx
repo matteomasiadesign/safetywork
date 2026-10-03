@@ -1,7 +1,16 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import Link from "@/components/ui/Link";
 import type { Category, Course } from "@/lib/types/database";
-import type { CourseFlags, CourseInput } from "@/context/AdminDataContext";
+import type { CourseFlags, CourseInput, EditionInput } from "@/context/AdminDataContext";
+import {
+  MODE_OPTIONS,
+  formatEditionDates,
+  isUpcoming,
+  modeLabel,
+  modeNeedsLocation,
+  normalizeMode,
+  upcomingEditions,
+} from "@/lib/courses/format";
 import { slugify } from "@/lib/utils/slug";
 import { compressImage, formatBytes } from "@/lib/images/compress";
 import {
@@ -71,7 +80,12 @@ export const COURSE_IMAGE_PRESETS = [
 interface CoursesManagerProps {
   courses: Course[];
   categories: Category[];
-  onSaveCourse: (input: CourseInput, id?: string, imageFile?: File | null) => Promise<unknown>;
+  onSaveCourse: (
+    input: CourseInput,
+    id?: string,
+    imageFile?: File | null,
+    editions?: EditionInput[]
+  ) => Promise<unknown>;
   onToggleCourse: (id: string, flags: CourseFlags) => Promise<void>;
   onDeleteCourse: (id: string) => Promise<void>;
   onDuplicateCourse: (id: string) => Promise<unknown>;
@@ -92,12 +106,23 @@ type CourseFormState = {
   normative_ref: string;
   target_audience: string;
   certification_issued: string;
-  location: string;
   image_url: string;
   is_featured: boolean;
   is_open_for_enrollment: boolean;
   is_published: boolean;
 };
+
+/** Una data del corso nel modulo; senza id = ancora da salvare. */
+type EditionRow = {
+  key: string;
+  id?: string;
+  start_date: string;
+  end_date: string;
+  location: string;
+  notes: string;
+};
+
+const newRowKey = () => Math.random().toString(36).slice(2);
 
 const DEFAULT_CONTENT = `### Obiettivi del Corso
 Fornire ai partecipanti il quadro completo degli obblighi di legge previsti dal D.Lgs. 81/08 e le competenze operative per prevenire gli infortuni e gestire le misure di sicurezza.
@@ -168,12 +193,11 @@ export default function CoursesManager({
     short_description: "",
     content: DEFAULT_CONTENT,
     duration_hours: 8,
-    mode: "Aula in presenza",
+    mode: "presenza",
     validity_years: 5,
     normative_ref: "Art. 37 D.Lgs. 81/08 - Accordo Stato-Regioni",
     target_audience: "Lavoratori, Preposti e Datori di Lavoro",
     certification_issued: "Attestato ufficiale abilitativo valido su tutto il territorio nazionale con verifica finale",
-    location: "Porto Torres (SS)",
     image_url: COURSE_IMAGE_PRESETS[0].url,
     is_featured: false,
     is_open_for_enrollment: true,
@@ -182,6 +206,37 @@ export default function CoursesManager({
 
   // Form State for Course Add / Edit
   const [courseForm, setCourseForm] = useState<CourseFormState>(emptyCourseForm);
+
+  // Date e sedi del corso in modifica
+  const [editionRows, setEditionRows] = useState<EditionRow[]>([]);
+  const needsLocation = modeNeedsLocation(courseForm.mode);
+
+  const knownLocations = useMemo(
+    () =>
+      Array.from(new Set(courses.flatMap((c) => c.editions.map((e) => e.location).filter((l): l is string => Boolean(l))))).sort(
+        (a, b) => a.localeCompare(b, "it")
+      ),
+    [courses]
+  );
+
+  const updateEditionRow = (key: string, patch: Partial<EditionRow>) =>
+    setEditionRows((rows) => rows.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+
+  const addEditionRow = () =>
+    setEditionRows((rows) => [...rows, { key: newRowKey(), start_date: "", end_date: "", location: "", notes: "" }]);
+
+  const removeEditionRow = (key: string) => setEditionRows((rows) => rows.filter((row) => row.key !== key));
+
+  /** Messaggio d'errore se le date inserite non sono valide, altrimenti null. */
+  const validateEditions = (): string | null => {
+    for (const [index, row] of editionRows.entries()) {
+      const n = index + 1;
+      if (!row.start_date) return `Data ${n}: indica il giorno di inizio.`;
+      if (row.end_date && row.end_date < row.start_date) return `Data ${n}: la fine non può precedere l'inizio.`;
+      if (needsLocation && !row.location.trim()) return `Data ${n}: indica la sede (oppure scegli la modalità Online).`;
+    }
+    return null;
+  };
 
   // Esegue un'azione su Supabase e mostra l'esito (anche gli errori)
   const runAction = async (action: () => Promise<unknown>, okMessage?: string) => {
@@ -198,10 +253,7 @@ export default function CoursesManager({
     const openEnrollment = courses.filter((c) => c.is_open_for_enrollment).length;
     const featured = courses.filter((c) => c.is_featured).length;
     const drafts = courses.filter((c) => !c.is_published).length;
-    const inPerson = courses.filter((c) => {
-      const m = (c.mode || "").toLowerCase();
-      return m.includes("aula") || m.includes("presenza") || m.includes("pratiche") || m.includes("misto");
-    }).length;
+    const inPerson = courses.filter((c) => normalizeMode(c.mode) !== "online").length;
     return { openEnrollment, featured, drafts, inPerson };
   }, [courses]);
 
@@ -217,11 +269,7 @@ export default function CoursesManager({
       if (statusFilter === "open" && !c.is_open_for_enrollment) return false;
       if (statusFilter === "draft" && c.is_published) return false;
       if (statusFilter === "featured" && !c.is_featured) return false;
-      if (statusFilter === "in_person") {
-        const m = (c.mode || "").toLowerCase();
-        const isInPerson = m.includes("aula") || m.includes("presenza") || m.includes("pratiche") || m.includes("misto");
-        if (!isInPerson) return false;
-      }
+      if (statusFilter === "in_person" && normalizeMode(c.mode) === "online") return false;
 
       // Text search
       if (searchQuery.trim() !== "") {
@@ -229,7 +277,7 @@ export default function CoursesManager({
         const matchTitle = c.title.toLowerCase().includes(q);
         const matchSlug = c.slug.toLowerCase().includes(q);
         const matchNorm = c.normative_ref.toLowerCase().includes(q);
-        const matchLoc = c.location ? c.location.toLowerCase().includes(q) : false;
+        const matchLoc = c.editions.some((e) => (e.location ?? "").toLowerCase().includes(q));
         const matchDesc = c.short_description.toLowerCase().includes(q);
         const matchCat = c.category.name.toLowerCase().includes(q);
         return matchTitle || matchSlug || matchNorm || matchLoc || matchDesc || matchCat;
@@ -251,6 +299,7 @@ export default function CoursesManager({
     setIsQuickAddCatOpen(false);
     setQuickNewCat("");
     setCourseForm(emptyCourseForm());
+    setEditionRows([]);
     setIsModalOpen(true);
   };
 
@@ -267,17 +316,26 @@ export default function CoursesManager({
       short_description: course.short_description,
       content: course.content,
       duration_hours: course.duration_hours,
-      mode: course.mode,
+      mode: normalizeMode(course.mode),
       validity_years: course.validity_years ?? 0,
       normative_ref: course.normative_ref,
       target_audience: course.target_audience || "",
       certification_issued: course.certification_issued || "",
-      location: course.location || "",
       image_url: course.image_url || COURSE_IMAGE_PRESETS[0].url,
       is_featured: course.is_featured,
       is_open_for_enrollment: course.is_open_for_enrollment,
       is_published: course.is_published,
     });
+    setEditionRows(
+      course.editions.map((e) => ({
+        key: newRowKey(),
+        id: e.id,
+        start_date: e.start_date,
+        end_date: e.end_date ?? "",
+        location: e.location ?? "",
+        notes: e.notes ?? "",
+      }))
+    );
     setIsModalOpen(true);
   };
 
@@ -344,6 +402,11 @@ export default function CoursesManager({
         showToast("La durata in ore deve essere di almeno 1 ora.", "error");
         return false;
       }
+      const editionsError = validateEditions();
+      if (editionsError) {
+        showToast(editionsError, "error");
+        return false;
+      }
     } else if (step === 3) {
       if (!courseForm.short_description.trim()) {
         showToast("Inserisci una breve descrizione sintetica del corso.", "error");
@@ -401,7 +464,6 @@ export default function CoursesManager({
       normative_ref: courseForm.normative_ref.trim(),
       target_audience: courseForm.target_audience.trim() || null,
       certification_issued: courseForm.certification_issued.trim() || null,
-      location: courseForm.location.trim() || null,
       // con una foto in attesa il vero URL lo assegna il salvataggio dopo il caricamento
       image_url: pendingImage ? editingCourse?.image_url ?? null : courseForm.image_url || null,
       is_featured: courseForm.is_featured,
@@ -409,9 +471,23 @@ export default function CoursesManager({
       is_published: courseForm.is_published,
     };
 
+    const editionsError = validateEditions();
+    if (editionsError) {
+      setCurrentStep(2);
+      showToast(editionsError, "error");
+      return;
+    }
+    const editions: EditionInput[] = editionRows.map((row) => ({
+      id: row.id,
+      start_date: row.start_date,
+      end_date: row.end_date || null,
+      location: needsLocation ? row.location.trim() || null : null,
+      notes: row.notes.trim() || null,
+    }));
+
     setIsSaving(true);
     try {
-      await onSaveCourse(input, editingCourse?.id, pendingImage);
+      await onSaveCourse(input, editingCourse?.id, pendingImage, editions);
       showToast(
         editingCourse
           ? `Corso "${input.title}" aggiornato.`
@@ -426,12 +502,6 @@ export default function CoursesManager({
       setIsSaving(false);
     }
   };
-
-  // Helper to check if current mode is in presence
-  const isPresenceCourse = useMemo(() => {
-    const m = (courseForm.mode || "").toLowerCase();
-    return m.includes("aula") || m.includes("presenza") || m.includes("pratiche") || m.includes("misto");
-  }, [courseForm.mode]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -750,12 +820,15 @@ export default function CoursesManager({
                     </span>
                   </div>
 
-                  {course.location && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#df0000]/90 text-white px-2 py-0.5 rounded-md">
-                      <MapPin className="w-3 h-3" />
-                      <span className="truncate max-w-[120px]">{course.location}</span>
-                    </span>
-                  )}
+                  {(() => {
+                    const next = upcomingEditions(course.editions)[0];
+                    return next?.location && normalizeMode(course.mode) !== "online" ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#df0000]/90 text-white px-2 py-0.5 rounded-md">
+                        <MapPin className="w-3 h-3" />
+                        <span className="truncate max-w-[120px]">{next.location}</span>
+                      </span>
+                    ) : null;
+                  })()}
                 </div>
               </div>
 
@@ -797,10 +870,26 @@ export default function CoursesManager({
 
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
                       <span className="text-[10px] font-bold uppercase text-slate-400 block">Modalità</span>
-                      <span className="font-semibold text-slate-800 line-clamp-1">{course.mode}</span>
+                      <span className="font-semibold text-slate-800 line-clamp-1">{modeLabel(course.mode)}</span>
                     </div>
                   </div>
 
+                  <div className="flex items-center gap-2 text-[11px] text-slate-600 bg-slate-50 border border-slate-100 rounded-xl px-2.5 py-2">
+                    <Calendar className="w-3.5 h-3.5 text-[#df0000] shrink-0" />
+                    {(() => {
+                      const next = upcomingEditions(course.editions)[0];
+                      return next ? (
+                        <span className="font-semibold line-clamp-1">
+                          {formatEditionDates(next)}
+                          {course.editions.length > 1 && (
+                            <span className="text-slate-400 font-medium"> · {upcomingEditions(course.editions).length} date in programma</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-amber-700 font-semibold">Nessuna data in programma</span>
+                      );
+                    })()}
+                  </div>
                   
                 </div>
               </div>
@@ -894,15 +983,22 @@ export default function CoursesManager({
 
                     {/* Mode & Location */}
                     <td className="py-3.5 px-3 text-slate-600">
-                      <div className="font-semibold text-slate-900 line-clamp-1">{course.mode}</div>
-                      {course.location ? (
-                        <div className="inline-flex items-center gap-1 text-[11px] text-[#df0000] font-bold mt-0.5 bg-red-50 px-2 py-0.5 rounded-md">
-                          <MapPin className="w-3 h-3" />
-                          <span>{course.location}</span>
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-slate-400 mt-0.5">Online / FAD</div>
-                      )}
+                      <div className="font-semibold text-slate-900 line-clamp-1">{modeLabel(course.mode)}</div>
+                      {(() => {
+                        const next = upcomingEditions(course.editions)[0];
+                        if (!next) return <div className="text-[10px] text-amber-700 mt-0.5 font-semibold">Nessuna data in programma</div>;
+                        return (
+                          <>
+                            <div className="text-[11px] text-slate-700 font-semibold mt-0.5">{formatEditionDates(next, { short: true })}</div>
+                            {next.location && normalizeMode(course.mode) !== "online" && (
+                              <div className="inline-flex items-center gap-1 text-[11px] text-[#df0000] font-bold mt-0.5 bg-red-50 px-2 py-0.5 rounded-md">
+                                <MapPin className="w-3 h-3" />
+                                <span>{next.location}</span>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </td>
 
                     {/* Duration & Validity */}
@@ -1277,13 +1373,13 @@ export default function CoursesManager({
                 </div>
               )}
 
-              {/* STEP 2: MODALITÀ, SEDE & SESSIONI */}
+              {/* STEP 2: MODALITÀ, DATE & SEDI */}
               {currentStep === 2 && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-200">
                   <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                     <Clock className="w-4 h-4 text-[#f58220]" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Step 2: Modalità di Erogazione, Durata e Sede
+                      Step 2: Modalità, Durata, Date e Sedi
                     </h4>
                   </div>
 
@@ -1320,55 +1416,117 @@ export default function CoursesManager({
                         onChange={(e) => setCourseForm({ ...courseForm, mode: e.target.value })}
                         className="w-full px-3 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
                       >
-                        <option value="Aula in presenza">Aula in presenza</option>
-                        <option value="Aula / Videoconferenza sincrona">Aula / Videoconferenza sincrona</option>
-                        <option value="Teoria + Prove Pratiche">Teoria + Prove Pratiche</option>
-                        <option value="Misto (Blended)">Misto (Blended)</option>
-                        <option value="Videoconferenza sincrona">Videoconferenza sincrona (Solo Online)</option>
-                        <option value="E-learning (FAD)">E-learning (FAD Online)</option>
+                        {MODE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
 
-                  {/* Sede / Città di svolgimento */}
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-[#df0000]" />
-                        <span>Città o Sede del Corso</span>
-                        {isPresenceCourse ? (
-                          <span className="text-[10px] font-bold uppercase tracking-wider bg-red-100 text-[#df0000] px-2 py-0.5 rounded-md">
-                            Corso in Presenza
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 italic">(Opzionale per corsi Online)</span>
-                        )}
-                      </label>
-                      <span className="text-[11px] text-slate-500">Visibile sui filtri territoriali e nelle schede</span>
+                  {/* Date e sedi in cui si svolge il corso */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-[#df0000]" />
+                          <span>Date e sedi del corso</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5 max-w-xl">
+                          {needsLocation
+                            ? "Per ogni data indica dove si svolge (città o sede dell'ente). "
+                            : "Corso online: indica solo le date, la sede non serve. "}
+                          Sul sito compaiono solo le date non ancora concluse.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addEditionRow}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Aggiungi data</span>
+                      </button>
                     </div>
 
-                    <input
-                      type="text"
-                      value={courseForm.location}
-                      onChange={(e) => setCourseForm({ ...courseForm, location: e.target.value })}
-                      placeholder="es. Porto Torres (SS), Sassari, Milano o Presso Sede Cliente"
-                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
-                    />
+                    {editionRows.length === 0 && (
+                      <div className="text-[11px] text-slate-500 italic bg-white border border-dashed border-slate-300 rounded-xl px-3 py-3">
+                        Nessuna data inserita: sul sito comparirà "Date da definire".
+                      </div>
+                    )}
 
-                    {/* Quick City chips */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">Sedi Rapide:</span>
-                      {["Porto Torres (SS)", "Sassari", "Cagliari", "Olbia", "Presso Sede Cliente"].map((sugg) => (
-                        <button
-                          key={sugg}
-                          type="button"
-                          onClick={() => setCourseForm({ ...courseForm, location: sugg })}
-                          className="text-[10px] px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-[#008e97] hover:text-[#008e97] text-slate-700 font-medium transition-colors"
-                        >
-                          {sugg}
-                        </button>
+                    <datalist id="known-edition-locations">
+                      {knownLocations.map((place) => (
+                        <option key={place} value={place} />
                       ))}
-                    </div>
+                    </datalist>
+
+                    {editionRows.map((row, index) => {
+                      const isPast = Boolean(row.start_date) && !isUpcoming({ start_date: row.start_date, end_date: row.end_date || null });
+                      return (
+                        <div key={row.key} className="grid grid-cols-12 gap-2 p-3 bg-white border border-slate-200 rounded-xl">
+                          <div className="col-span-12 sm:col-span-3">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Dal *</label>
+                            <input
+                              type="date"
+                              value={row.start_date}
+                              onChange={(e) => updateEditionRow(row.key, { start_date: e.target.value })}
+                              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+                            />
+                          </div>
+                          <div className="col-span-12 sm:col-span-3">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Al (se più giorni)</label>
+                            <input
+                              type="date"
+                              min={row.start_date || undefined}
+                              value={row.end_date}
+                              onChange={(e) => updateEditionRow(row.key, { end_date: e.target.value })}
+                              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+                            />
+                          </div>
+                          {needsLocation ? (
+                            <div className="col-span-10 sm:col-span-5">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Sede *</label>
+                              <input
+                                type="text"
+                                list="known-edition-locations"
+                                value={row.location}
+                                onChange={(e) => updateEditionRow(row.key, { location: e.target.value })}
+                                placeholder="es. Sassari, Porto Torres (SS)"
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+                              />
+                            </div>
+                          ) : (
+                            <div className="col-span-10 sm:col-span-5 flex items-end pb-2 text-[11px] text-slate-500 italic">Online: nessuna sede</div>
+                          )}
+                          <div className="col-span-2 sm:col-span-1 flex items-end justify-end">
+                            <button
+                              type="button"
+                              onClick={() => removeEditionRow(row.key)}
+                              className="p-2 rounded-lg text-slate-400 hover:text-[#df0000] hover:bg-[#fdf2f2] transition-colors"
+                              title={`Elimina la data ${index + 1}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="col-span-12">
+                            <input
+                              type="text"
+                              value={row.notes}
+                              onChange={(e) => updateEditionRow(row.key, { notes: e.target.value })}
+                              placeholder="Nota facoltativa (es. orario 9:00–18:00, ente organizzatore)"
+                              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+                            />
+                          </div>
+                          {isPast && (
+                            <div className="col-span-12 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                              Data già conclusa: non è più visibile sul sito. Puoi eliminarla.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
@@ -1555,11 +1713,24 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                           <div className="flex items-center gap-3 pt-2 text-[10px] text-slate-600 font-semibold">
                             <span>{courseForm.duration_hours} Ore</span>
                             <span>•</span>
-                            <span>{courseForm.mode}</span>
-                            {courseForm.location && (
+                            <span>{modeLabel(courseForm.mode)}</span>
+                            {upcomingEditions(
+                              editionRows
+                                .filter((r) => r.start_date)
+                                .map((r) => ({ start_date: r.start_date, end_date: r.end_date || null, location: r.location || null }))
+                            )[0] && (
                               <>
                                 <span>•</span>
-                                <span className="text-[#df0000]">{courseForm.location}</span>
+                                <span className="text-[#df0000]">
+                                  {formatEditionDates(
+                                    upcomingEditions(
+                                      editionRows
+                                        .filter((r) => r.start_date)
+                                        .map((r) => ({ start_date: r.start_date, end_date: r.end_date || null }))
+                                    )[0],
+                                    { short: true }
+                                  )}
+                                </span>
                               </>
                             )}
                           </div>

@@ -11,7 +11,13 @@ export type Category = Tables<"categories">;
 /** Riferimento alla categoria incluso in ogni corso (join). */
 export type CategoryRef = Pick<Category, "id" | "name" | "slug" | "sort_order">;
 
-export type Course = Tables<"courses"> & { category: CategoryRef };
+/** Una data in cui il corso si svolge (con la sua sede). */
+export type CourseEdition = Pick<
+  Tables<"course_editions">,
+  "id" | "course_id" | "start_date" | "end_date" | "location" | "notes"
+>;
+
+export type Course = Tables<"courses"> & { category: CategoryRef; editions: CourseEdition[] };
 
 export type ServiceBadgeColor = "cyan" | "orange" | "red";
 
@@ -42,6 +48,8 @@ export interface Inquiry {
   courseId?: string;
   courseTitle?: string;
   courseSlug?: string;
+  /** Data scelta dal cliente, come testo (es. "12–13 novembre 2026 · Sassari"). */
+  editionLabel?: string;
   participantsCount?: number;
   preferredMode?: string;
   service_type?: string;

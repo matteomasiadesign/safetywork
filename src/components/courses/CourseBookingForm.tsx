@@ -16,14 +16,19 @@ import {
   Calendar,
 } from "lucide-react";
 import { COMPANY_CONFIG } from "@/config/company";
+import { submitInquiry } from "@/lib/utils/submitInquiry";
+import { editionLabel } from "@/lib/courses/format";
+import type { CourseEdition } from "@/lib/types/database";
 import BrandStripe from "@/components/ui/BrandStripe";
 
 interface CourseBookingFormProps {
   course: Course;
   phoneHref: string;
+  /** Date in programma (non ancora concluse), già calcolate dal server. */
+  editions: CourseEdition[];
 }
 
-export default function CourseBookingForm({ course, phoneHref }: CourseBookingFormProps) {
+export default function CourseBookingForm({ course, phoneHref, editions }: CourseBookingFormProps) {
   const [clientType, setClientType] = useState<"privato" | "azienda">("privato");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -53,7 +58,7 @@ export default function CourseBookingForm({ course, phoneHref }: CourseBookingFo
     postalCode: "",
     email: "",
     phone: "",
-    preferredMode: course.mode?.includes("Aula") ? "Aula in sede" : "Videoconferenza",
+    editionId: "",
     notes: "",
   });
 
@@ -85,7 +90,7 @@ export default function CourseBookingForm({ course, phoneHref }: CourseBookingFo
       postalCode: "",
       email: "",
       phone: "",
-      preferredMode: course.mode?.includes("Aula") ? "Aula in sede" : "Videoconferenza",
+      editionId: "",
       notes: "",
     });
   };
@@ -101,35 +106,21 @@ export default function CourseBookingForm({ course, phoneHref }: CourseBookingFo
 
     setIsSubmitting(true);
 
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: "corso",
-          courseSlug: course.slug,
-          clientType,
-          ...formData,
-          privacyAccepted,
-          website,
-        }),
-      });
+    const result = await submitInquiry({
+      kind: "corso",
+      courseSlug: course.slug,
+      clientType,
+      ...formData,
+      privacyAccepted,
+      website,
+    });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setSubmitError(
-          data.error || "Non è stato possibile inviare la richiesta. Riprova tra poco o chiamaci direttamente."
-        );
-        return;
-      }
-
-      setIsSubmitted(true);
-    } catch {
-      setSubmitError("Connessione non riuscita: la richiesta NON è stata inviata. Riprova o chiamaci direttamente.");
-    } finally {
-      setIsSubmitting(false);
+    setIsSubmitting(false);
+    if (!result.ok) {
+      setSubmitError(result.error);
+      return;
     }
+    setIsSubmitted(true);
   };
 
   if (isSubmitted) {
@@ -454,19 +445,24 @@ export default function CourseBookingForm({ course, phoneHref }: CourseBookingFo
                 className="w-full px-3.5 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-[#008e97] focus:ring-2 focus:ring-[#008e97]/20 transition-all"
               />
             </div>
-            <div className="sm:col-span-1">
-              <label className="block text-xs font-bold text-slate-700 mb-1">Modalità Preferita</label>
-              <select
-                name="preferredMode"
-                value={formData.preferredMode}
-                onChange={handleInputChange}
-                className="w-full px-3.5 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:border-[#008e97] focus:ring-2 focus:ring-[#008e97]/20 transition-all"
-              >
-                <option value="Aula in sede">Aula in presenza (Sede Safety Works)</option>
-                <option value="Videoconferenza">Videoconferenza Sincrona</option>
-                <option value="Presso Azienda">Presso sede del cliente (aziendale)</option>
-              </select>
-            </div>
+            {editions.length > 0 && (
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1">Data di interesse</label>
+                <select
+                  name="editionId"
+                  value={formData.editionId}
+                  onChange={handleInputChange}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:border-[#008e97] focus:ring-2 focus:ring-[#008e97]/20 transition-all"
+                >
+                  <option value="">Nessuna data in particolare: avvisatemi sulle prossime</option>
+                  {editions.map((edition) => (
+                    <option key={edition.id} value={edition.id}>
+                      {editionLabel(edition, course.mode)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div>

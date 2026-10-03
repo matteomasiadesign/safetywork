@@ -220,6 +220,47 @@ export type Database = {
           },
         ]
       }
+      course_editions: {
+        Row: {
+          course_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          location: string | null
+          notes: string | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_editions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inquiries: {
         Row: {
           address: string | null
@@ -233,6 +274,8 @@ export type Database = {
           course_slug: string | null
           course_title: string | null
           created_at: string
+          edition_id: string | null
+          edition_label: string | null
           email: string
           first_name: string | null
           fiscal_code: string | null
@@ -267,6 +310,8 @@ export type Database = {
           course_slug?: string | null
           course_title?: string | null
           created_at?: string
+          edition_id?: string | null
+          edition_label?: string | null
           email: string
           first_name?: string | null
           fiscal_code?: string | null
@@ -301,6 +346,8 @@ export type Database = {
           course_slug?: string | null
           course_title?: string | null
           created_at?: string
+          edition_id?: string | null
+          edition_label?: string | null
           email?: string
           first_name?: string | null
           fiscal_code?: string | null
@@ -329,6 +376,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inquiries_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
             referencedColumns: ["id"]
           },
         ]

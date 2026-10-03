@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import CourseCard from "@/components/ui/CourseCard";
 import Link from "@/components/ui/Link";
 import type { Course } from "@/lib/types/database";
+import { MODE_OPTIONS, normalizeMode, upcomingLocations, type CourseMode } from "@/lib/courses/format";
 import {
   Search,
   SlidersHorizontal,
@@ -22,6 +23,7 @@ import {
 export default function CoursesCatalog({ courses }: { courses: Course[] }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("Tutti");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedMode, setSelectedMode] = useState<CourseMode | "tutte">("tutte");
 
   // Dropdown states
   const [isCategoryOpen, setIsCategoryOpen] = useState<boolean>(false);
@@ -72,15 +74,17 @@ export default function CoursesCatalog({ courses }: { courses: Course[] }) {
     return courses.filter((course) => {
       const matchesCategory =
         selectedCategory === "Tutti" || course.category.name === selectedCategory;
+      const matchesMode = selectedMode === "tutte" || normalizeMode(course.mode) === selectedMode;
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.short_description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.normative_ref.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (course.location ? course.location.toLowerCase().includes(searchQuery.toLowerCase()) : false);
+        course.title.toLowerCase().includes(q) ||
+        course.short_description.toLowerCase().includes(q) ||
+        course.normative_ref.toLowerCase().includes(q) ||
+        upcomingLocations(course.editions).some((place) => place.toLowerCase().includes(q));
 
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesMode && matchesSearch;
     });
-  }, [courses, selectedCategory, searchQuery]);
+  }, [courses, selectedCategory, selectedMode, searchQuery]);
 
   return (
     <>
@@ -96,7 +100,7 @@ export default function CoursesCatalog({ courses }: { courses: Course[] }) {
                   <Search className="w-4 h-4 text-slate-400 absolute left-4 pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Cerca corso per titolo, figura o normativa (es. RSPP, Antincendio, RLS)..."
+                    placeholder="Cerca corso per titolo, normativa o città (es. RSPP, Antincendio, Sassari)..."
                     value={searchQuery}
                     onFocus={() => setIsSearchFocused(true)}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -219,11 +223,12 @@ export default function CoursesCatalog({ courses }: { courses: Course[] }) {
                 </div>
 
                 {/* Reset Filters button if any filter is active */}
-                {(selectedCategory !== "Tutti" || searchQuery) && (
+                {(selectedCategory !== "Tutti" || selectedMode !== "tutte" || searchQuery) && (
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedCategory("Tutti");
+                      setSelectedMode("tutte");
                       setSearchQuery("");
                     }}
                     className="p-2.5 rounded-xl border border-slate-200/80 bg-white/70 hover:bg-white text-slate-500 hover:text-[#df0000] hover:border-[#df0000]/30 transition-all shadow-xs shrink-0"
@@ -249,8 +254,25 @@ export default function CoursesCatalog({ courses }: { courses: Course[] }) {
                 Catalogo Corsi di Formazione
               </h1>
               <p className="mt-2 text-sm text-slate-600 max-w-2xl">
-                Percorsi didattici in presenza, videoconferenza sincrona e addestramento pratico. Attestati con validità legale su tutto il territorio nazionale.
+                Corsi in presenza, online o misti, con date e sedi aggiornate. Attestati con validità legale su tutto il territorio nazionale.
               </p>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {([{ value: "tutte", label: "Tutte le modalità" }, ...MODE_OPTIONS] as { value: CourseMode | "tutte"; label: string }[]).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setSelectedMode(option.value)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      selectedMode === option.value
+                        ? "bg-[#008e97] text-white border-[#008e97]"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-[#008e97] hover:text-[#008e97]"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -280,12 +302,13 @@ export default function CoursesCatalog({ courses }: { courses: Course[] }) {
               <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
                 {courses.length === 0
                   ? "Stiamo aggiornando l'offerta formativa. Contattaci per conoscere le prossime date."
-                  : `Nessun percorso formativo corrisponde a "${searchQuery}" nella categoria selezionata.`}
+                  : "Nessun corso corrisponde ai filtri scelti. Prova a cambiare categoria, modalità o ricerca."}
               </p>
               {courses.length > 0 && (<button
                 type="button"
                 onClick={() => {
                   setSelectedCategory("Tutti");
+                  setSelectedMode("tutte");
                   setSearchQuery("");
                 }}
                 className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#008e97] text-white text-xs font-bold hover:bg-[#00777f] transition-colors"

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { COMPANY_CONFIG } from "@/config/company";
 import BrandStripe from "@/components/ui/BrandStripe";
 import { companyContacts } from "@/lib/content/format";
+import { submitInquiry } from "@/lib/utils/submitInquiry";
 import type { ContentSlice } from "@/lib/content/schema";
 import {
   Mail,
@@ -74,54 +75,39 @@ export default function ContactSection({ content }: { content: ContentSlice<"hom
     setStatus("loading");
     setFeedbackMessage("");
 
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: "contatto",
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          company: formData.company,
-          serviceType: formData.service_type,
-          message: formData.message,
-          privacyAccepted: formData.privacyAccepted,
-          website: formData.website,
-        }),
-      });
+    const result = await submitInquiry({
+      kind: "contatto",
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      company: formData.company,
+      serviceType: formData.service_type,
+      message: formData.message,
+      privacyAccepted: formData.privacyAccepted,
+      website: formData.website,
+    });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setStatus("error");
-        setFeedbackMessage(
-          data.error || "Non è stato possibile inviare la richiesta. Riprova tra poco o chiamaci direttamente."
-        );
-        return;
-      }
-
-      setStatus("success");
-      setFeedbackMessage(
-        data.message || "Richiesta inviata con successo! Un nostro tecnico ti ricontatterà al più presto."
-      );
-      setFormData({
-        name: "",
-        email: "",
-        company: "",
-        phone: "",
-        service_type: "",
-        message: "",
-        privacyAccepted: false,
-        website: "",
-      });
-      setCurrentStep(1);
-    } catch {
+    if (!result.ok) {
       setStatus("error");
-      setFeedbackMessage(
-        "Connessione non riuscita: la richiesta NON è stata inviata. Riprova o chiamaci direttamente."
-      );
+      setFeedbackMessage(result.error);
+      return;
     }
+
+    setStatus("success");
+    setFeedbackMessage(
+      result.message || "Richiesta inviata con successo! Un nostro tecnico ti ricontatterà al più presto."
+    );
+    setFormData({
+      name: "",
+      email: "",
+      company: "",
+      phone: "",
+      service_type: "",
+      message: "",
+      privacyAccepted: false,
+      website: "",
+    });
+    setCurrentStep(1);
   };
 
   return (

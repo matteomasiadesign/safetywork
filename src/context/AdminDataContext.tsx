@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { createClient } from "@/lib/supabase/client";
 import { toServiceItem } from "@/lib/data/serviceMapper";
 import { slugify } from "@/lib/utils/slug";
+import { sortEditions } from "@/lib/courses/format";
 import { IMAGE_BUCKET, storagePathFromUrl } from "@/lib/images/storage";
 import { CONTENT_DEFAULTS, isContentKey, type ContentKey } from "@/lib/content/schema";
 import { MAX_IMAGE_BYTES } from "@/lib/images/compress";
@@ -28,7 +29,13 @@ import type { Tables, TablesInsert } from "@/lib/types/supabase";
  * il file corrispondente viene rimosso anche da Storage (se nessun altro lo usa).
  */
 
-const COURSE_SELECT = "*, category:categories(id, name, slug, sort_order)";
+const COURSE_SELECT =
+  "*, category:categories(id, name, slug, sort_order), editions:course_editions(id, course_id, start_date, end_date, location, notes)";
+
+const toCourse = (row: unknown): Course => {
+  const course = row as Course;
+  return { ...course, editions: sortEditions(course.editions) };
+};
 const INQUIRY_LIMIT = 500;
 const INQUIRY_POLL_MS = 60_000;
 const ORPHAN_MIN_AGE_MS = 10 * 60 * 1000; // non toccare file caricati negli ultimi 10 minuti
@@ -48,6 +55,15 @@ export type ServiceInput = {
   icon_name: string;
   badge_color: "cyan" | "orange" | "red";
   is_published: boolean;
+};
+
+/** Una data del corso nel modulo admin; senza id = nuova. */
+export type EditionInput = {
+  id?: string;
+  start_date: string;
+  end_date: string | null;
+  location: string | null;
+  notes: string | null;
 };
 
 export type AgendaEventInput = Omit<AgendaEvent, "id" | "created_at">;
@@ -75,8 +91,17 @@ interface AdminDataContextType {
   renameCategory: (id: string, name: string) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
 
-  /** imageFile: foto già compressa da caricare; viene salvata solo se il corso viene salvato. */
-  saveCourse: (input: CourseInput, id?: string, imageFile?: File | null) => Promise<Course>;
+  /**
+   * imageFile: foto già compressa da caricare; viene salvata solo se il corso viene salvato.
+   * editions: elenco completo delle date del corso (quelle assenti dall'elenco vengono eliminate);
+   * se omesso le date non vengono toccate.
+   */
+  saveCourse: (
+    input: CourseInput,
+    id?: string,
+    imageFile?: File | null,
+    editions?: EditionInput[]
+  ) => Promise<Course>;
   setCourseFlags: (id: string, flags: CourseFlags) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
   duplicateCourse: (id: string) => Promise<Course>;
@@ -127,6 +152,7 @@ function rowToInquiry(row: Tables<"inquiries">): Inquiry {
     courseId: row.course_id ?? undefined,
     courseTitle: row.course_title ?? undefined,
     courseSlug: row.course_slug ?? undefined,
+    editionLabel: row.edition_label ?? undefined,
     participantsCount: row.participants_count,
     preferredMode: row.preferred_mode ?? undefined,
     service_type: row.service_type ?? undefined,
@@ -262,7 +288,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       if (failed) throw new Error(errorMessage(failed));
 
       setCategories(cats.data ?? []);
-      setCourses((crs.data ?? []) as unknown as Course[]);
+      setCourses((crs.data ?? []).map(toCourse));
       setServices((srv.data ?? []).map(toServiceItem));
       setEvents((evt.data ?? []).map(rowToEvent));
       setSiteContent(rowsToOverrides(cnt.data ?? []));
@@ -481,9 +507,10 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
   // -------------------------------------------------------------------- corsi
   const saveCourse = useCallback(
-    async (input: CourseInput, id?: string, imageFile?: File | null): Promise<Course> => {
+    async (input: CourseInput, id?: string, imageFile?: File | null, editions?: EditionInput[]): Promise<Course> => {
       const supabase = getSupabase();
-      const previousImage = id ? courses.find((c) => c.id === id)?.image_url : null;
+      const previousCourse = id ? courses.find((c) => c.id === id) : undefined;
+      const previousImage = previousCourse?.image_url ?? null;
 
       let uploadedPath: string | null = null;
       const payload = { ...input };
@@ -504,13 +531,59 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         throw new Error(errorMessage(error));
       }
 
-      const saved = data as unknown as Course;
+      let saved = toCourse(data);
       setCourses((prev) => (id ? prev.map((c) => (c.id === id ? saved : c)) : [saved, ...prev]));
 
       // Immagine sostituita: la vecchia (se nostra e non più usata) va rimossa.
       if (previousImage && previousImage !== saved.image_url) await removeImageIfUnused(previousImage);
 
+      // Date del corso: si allinea il database all'elenco inviato dal modulo.
+      let editionsError: string | null = null;
+      if (editions) {
+        try {
+          const keepIds = new Set(editions.filter((e) => e.id).map((e) => e.id as string));
+          const removeIds = (previousCourse?.editions ?? []).map((e) => e.id).filter((eid) => !keepIds.has(eid));
+
+          if (removeIds.length > 0) {
+            const { error: delError } = await supabase.from("course_editions").delete().in("id", removeIds);
+            if (delError) throw new Error(errorMessage(delError));
+          }
+
+          const rowOf = (e: EditionInput) => ({
+            course_id: saved.id,
+            start_date: e.start_date,
+            end_date: e.end_date,
+            location: e.location,
+            notes: e.notes,
+          });
+
+          const existing = editions.filter((e) => e.id).map((e) => ({ id: e.id as string, ...rowOf(e) }));
+          if (existing.length > 0) {
+            const { error: upError } = await supabase.from("course_editions").upsert(existing, { onConflict: "id" });
+            if (upError) throw new Error(errorMessage(upError));
+          }
+
+          const fresh = editions.filter((e) => !e.id).map(rowOf);
+          if (fresh.length > 0) {
+            const { error: insError } = await supabase.from("course_editions").insert(fresh);
+            if (insError) throw new Error(errorMessage(insError));
+          }
+        } catch (err) {
+          editionsError = err instanceof Error ? err.message : "errore sconosciuto";
+        }
+
+        // Stato locale = quello che c'è davvero nel database (anche se qualche data non è stata salvata).
+        const { data: refreshed } = await supabase.from("courses").select(COURSE_SELECT).eq("id", saved.id).single();
+        if (refreshed) {
+          saved = toCourse(refreshed);
+          setCourses((prev) => prev.map((c) => (c.id === saved.id ? saved : c)));
+        }
+      }
+
       await notifyPublicSite();
+      if (editionsError) {
+        throw new Error(`Il corso è stato salvato ma le date no: ${editionsError}. Riapri il corso e riprova.`);
+      }
       return saved;
     },
     [courses, getSupabase, removeFromStorage, removeImageIfUnused, uploadImage]
@@ -526,7 +599,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         .single();
       if (error) throw new Error(errorMessage(error));
 
-      setCourses((prev) => prev.map((c) => (c.id === id ? (data as unknown as Course) : c)));
+      setCourses((prev) => prev.map((c) => (c.id === id ? toCourse(data) : c)));
       await notifyPublicSite();
     },
     [getSupabase]
@@ -555,7 +628,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       const original = courses.find((c) => c.id === id);
       if (!original) throw new Error("Corso non trovato.");
 
-      const { category: _category, id: _id, created_at: _c, updated_at: _u, ...fields } = original;
+      const { category: _category, editions: _editions, id: _id, created_at: _c, updated_at: _u, ...fields } = original;
       return saveCourse({
         ...fields,
         title: `${original.title} (Copia)`,
