@@ -147,23 +147,23 @@ export default function InquiriesManager({
       : rawPhone;
 
     const courseOrService = inquiry.courseTitle || inquiry.service_type || "la sicurezza sul lavoro";
-    const text = `Gentile ${inquiry.name}, la contatto dal centro di formazione Safety Work S.r.l.s. in merito alla Sua richiesta per "${courseOrService}". Siamo a Sua disposizione per concordare le date e la partecipazione.`;
+    const text = `Gentile ${inquiry.name}, la contatto dal centro di formazione Safety Works S.r.l.s. in merito alla Sua richiesta per "${courseOrService}". Siamo a Sua disposizione per concordare le date e la partecipazione.`;
     return `https://wa.me/${fullPhone}?text=${encodeURIComponent(text)}`;
   };
 
   // Helper to build prefilled Mailto link
   const getMailtoLink = (inquiry: Inquiry) => {
     const subject = inquiry.courseTitle
-      ? `Safety Work - Riscontro prenotazione per "${inquiry.courseTitle}"`
-      : `Safety Work - Riscontro richiesta di contatto`;
+      ? `Safety Works - Riscontro prenotazione per "${inquiry.courseTitle}"`
+      : `Safety Works - Riscontro richiesta di contatto`;
     
     const body = `Gentile ${inquiry.name},\n\n` +
-      `La ringraziamo per averci contattato tramite il portale Safety Work S.r.l.s.\n\n` +
+      `La ringraziamo per averci contattato tramite il portale Safety Works S.r.l.s.\n\n` +
       (inquiry.courseTitle ? `In merito alla Sua richiesta per il corso "${inquiry.courseTitle}" (${inquiry.participantsCount || 1} partecipanti):\n` : "") +
       `Restiamo a completa disposizione per definire le date del corso, i dettagli logistici e le modalità di iscrizione.\n\n` +
       `Cordiali saluti,\n` +
       `Ufficio Formazione & Consulenza HSE\n` +
-      `Safety Work S.r.l.s.\n` +
+      `Safety Works S.r.l.s.\n` +
       `Tel: ${COMPANY_CONFIG.contacts.phone} | ${COMPANY_CONFIG.contacts.email}`;
 
     return `mailto:${inquiry.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;

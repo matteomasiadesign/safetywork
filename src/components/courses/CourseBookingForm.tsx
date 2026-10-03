@@ -461,7 +461,7 @@ export default function CourseBookingForm({ course }: CourseBookingFormProps) {
                 onChange={handleInputChange}
                 className="w-full px-3.5 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:border-[#008e97] focus:ring-2 focus:ring-[#008e97]/20 transition-all"
               >
-                <option value="Aula in sede">Aula in presenza (Sede Safety Work)</option>
+                <option value="Aula in sede">Aula in presenza (Sede Safety Works)</option>
                 <option value="Videoconferenza">Videoconferenza Sincrona</option>
                 <option value="Presso Azienda">Presso sede del cliente (aziendale)</option>
               </select>

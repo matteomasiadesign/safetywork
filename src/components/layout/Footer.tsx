@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "@/components/ui/Link";
-import { Shield, ArrowUp, Mail, Phone, MapPin, CheckCircle2, PhoneCall, ArrowRight } from "lucide-react";
+import { ArrowUp, Mail, Phone, MapPin, CheckCircle2, PhoneCall, ArrowRight } from "lucide-react";
 import { COMPANY_CONFIG } from "@/config/company";
 import BrandStripe from "@/components/ui/BrandStripe";
 
@@ -96,18 +97,17 @@ export default function Footer({ courseLinks = [] }: FooterProps) {
           {/* Colonna Brand & Recapiti con Barrette Geometriche */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center space-x-3">
-              {/* Logo con rotazione geometrica a due livelli (Ciano e Rosso) */}
-              <div className="relative w-10 h-10 flex items-center justify-center">
-                <div className="absolute inset-0 bg-[#008e97] transform -rotate-6 rounded-xl shadow-xs" />
-                <div className="absolute inset-0.5 bg-[#df0000] transform rotate-6 rounded-lg opacity-90" />
-                <div className="relative z-10 text-white flex items-center justify-center">
-                  <Shield className="w-5 h-5 fill-white/20 stroke-white stroke-[2.2]" />
-                </div>
-              </div>
+              <Image
+                src="/favicon.webp"
+                alt="Safety Works"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain"
+              />
 
               <div className="flex flex-col">
                 <span className="text-xl font-extrabold tracking-tight text-white">
-                  SAFETY<span className="text-[#008e97]">WORK</span>
+                  SAFETY<span className="text-[#008e97]">WORKS</span>
                   <span className="text-xs text-[#f58220] ml-1.5 font-bold">S.r.l.s.</span>
                 </span>
                 <span className="text-[10px] font-medium tracking-widest text-slate-400 uppercase">

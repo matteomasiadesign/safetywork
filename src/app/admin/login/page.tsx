@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, AlertTriangle } from "lucide-react";
+import Image from "next/image";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertTriangle } from "lucide-react";
 import Link from "@/components/ui/Link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -57,11 +58,9 @@ function LoginForm() {
 
         <div className="p-8 sm:p-10">
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-[#e6f6f7] border border-[#008e97]/30 flex items-center justify-center text-[#008e97] mb-3 shadow-inner">
-              <Shield className="w-8 h-8 stroke-[2.2]" />
-            </div>
+            <Image src="/favicon.webp" alt="Safety Works" width={56} height={56} priority className="w-14 h-14 object-contain mb-3" />
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              SAFETY<span className="text-[#008e97]">WORK</span> Admin
+              SAFETY<span className="text-[#008e97]">WORKS</span> Admin
             </h1>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-1">
               Area riservata

@@ -59,7 +59,7 @@ export function buildIcs(events: AgendaEvent[]): string {
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Safety Work S.r.l.s.//Agenda Operativa//IT",
+    "PRODID:-//Safety Works S.r.l.s.//Agenda Operativa//IT",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
   ];

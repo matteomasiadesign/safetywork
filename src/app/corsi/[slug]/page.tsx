@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const course = await getPublishedCourseBySlug(params.slug);
   if (!course) {
     return {
-      title: "Corso non trovato | Safety Work S.r.l.s.",
+      title: "Corso non trovato | Safety Works S.r.l.s.",
     };
   }
 

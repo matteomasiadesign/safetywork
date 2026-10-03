@@ -1,6 +1,6 @@
-# Safety Work S.r.l.s. - Corporate Website & Educational Platform
+# Safety Works S.r.l.s. - Corporate Website & Educational Platform
 
-Sito web aziendale moderno, ad alte prestazioni e conforme per **Safety Work S.r.l.s.**, società specializzata in consulenza, formazione accreditata e progettazione per la sicurezza e igiene nei luoghi di lavoro (D.Lgs. 81/08 e s.m.i.).
+Sito web aziendale moderno, ad alte prestazioni e conforme per **Safety Works S.r.l.s.**, società specializzata in consulenza, formazione accreditata e progettazione per la sicurezza e igiene nei luoghi di lavoro (D.Lgs. 81/08 e s.m.i.).
 
 ---
 

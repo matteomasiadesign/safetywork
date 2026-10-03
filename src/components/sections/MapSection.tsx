@@ -27,7 +27,7 @@ export default function MapSection() {
             allowFullScreen
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            title="Mappa Sede Safety Work S.r.l.s."
+            title="Mappa Sede Safety Works S.r.l.s."
             className="absolute inset-0"
           ></iframe>
         </div>

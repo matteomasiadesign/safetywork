@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "@/components/ui/Link";
-import { Menu, X, Shield, PhoneCall, ChevronRight, ChevronDown } from "lucide-react";
+import { Menu, X, PhoneCall, ChevronRight, ChevronDown } from "lucide-react";
 import { COMPANY_CONFIG } from "@/config/company";
 import BrandStripe from "@/components/ui/BrandStripe";
 
@@ -57,18 +58,19 @@ export default function Navbar({ courseLinks = [] }: NavbarProps) {
           <div className="w-full flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3 group">
-              <div className="relative w-10 h-10 flex items-center justify-center">
-                <div className="absolute inset-0 bg-brand-cyan transform -rotate-6 rounded-xl transition-transform group-hover:rotate-0 duration-300 shadow-sm" />
-                <div className="absolute inset-1 bg-[#df0000] transform rotate-6 rounded-lg opacity-90 transition-transform group-hover:rotate-12 duration-300" />
-                <div className="relative z-10 text-white flex items-center justify-center">
-                  <Shield className="w-5 h-5 fill-white/20 stroke-white stroke-[2.2]" />
-                </div>
-              </div>
+              <Image
+                src="/favicon.webp"
+                alt="Safety Works"
+                width={40}
+                height={40}
+                priority
+                className="w-10 h-10 object-contain transition-transform group-hover:scale-105 duration-300"
+              />
 
               <div className="flex flex-col">
                 <div className="flex items-center space-x-1.5 whitespace-nowrap">
                   <span className="text-xl font-extrabold tracking-tight text-slate-900">
-                    SAFETY<span className="text-brand-cyan">WORK</span>
+                    SAFETY<span className="text-brand-cyan">WORKS</span>
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#df0000] bg-[#fdf2f2] px-1.5 py-0.5 rounded border border-[#df0000]/20 whitespace-nowrap">
                     S.r.l.s.

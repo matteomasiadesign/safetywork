@@ -1,9 +1,9 @@
 /**
- * Configurazione Dati Aziendali Safety Work S.r.l.s.
+ * Configurazione Dati Aziendali Safety Works S.r.l.s.
  * Unico punto di verità per anagrafica, recapiti e riferimenti legali.
  */
 export const COMPANY_CONFIG = {
-  name: "Safety Work S.r.l.s.",
+  name: "Safety Works S.r.l.s.",
   tagline: "Sicurezza & Igiene nei Luoghi di Lavoro",
   description:
     "Società specializzata in consulenza strategica, formazione accreditata D.Lgs. 81/08 e progettazione antincendio per la tutela della salute e sicurezza nei luoghi di lavoro.",

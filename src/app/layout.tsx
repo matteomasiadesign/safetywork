@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   title: `${COMPANY_CONFIG.name} | ${COMPANY_CONFIG.tagline}`,
   description: COMPANY_CONFIG.description,
   keywords: [
-    "Safety Work",
+    "Safety Works",
     "Sicurezza sul lavoro",
     "D.Lgs. 81/08",
     "Corsi sicurezza lavoro",
@@ -41,6 +41,10 @@ export const metadata: Metadata = {
     "Consulenza sicurezza Porto Torres",
     "Formazione accreditata Sardegna",
   ],
+  icons: {
+    icon: "/favicon.webp",
+    apple: "/favicon.webp",
+  },
   authors: [{ name: COMPANY_CONFIG.name }],
   creator: COMPANY_CONFIG.name,
   openGraph: {

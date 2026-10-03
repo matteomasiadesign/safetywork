@@ -1,6 +1,6 @@
+import Image from "next/image";
 import React from "react";
 import {
-  Shield,
   Inbox,
   BookOpen,
   Tag,
@@ -92,13 +92,13 @@ export default function AdminSidebar({
       <div className="px-4 py-3.5 border-b border-slate-800/80 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#008e97] to-[#006e75] text-white flex items-center justify-center shadow-md shadow-[#008e97]/20 border border-white/10 shrink-0">
-              <Shield className="w-5 h-5 stroke-[2.2]" />
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-md border border-white/10 shrink-0">
+              <Image src="/favicon.webp" alt="Safety Works" width={24} height={24} className="w-6 h-6 object-contain" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center space-x-1.5">
                 <span className="text-sm font-black tracking-tight text-white">
-                  SAFETY<span className="text-[#008e97]">WORK</span>
+                  SAFETY<span className="text-[#008e97]">WORKS</span>
                 </span>
                 <span className="text-[8px] font-black uppercase tracking-wider text-white bg-[#df0000] px-1 py-0.5 rounded shadow-xs">
                   ADMIN

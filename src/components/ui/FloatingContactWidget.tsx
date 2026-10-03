@@ -59,7 +59,7 @@ export default function FloatingContactWidget() {
 
   const phoneHref = `tel:${COMPANY_CONFIG.contacts.phoneClean}`;
   const whatsappMessage = encodeURIComponent(
-    "Buongiorno, vorrei informazioni sui corsi di formazione e servizi di sicurezza sul lavoro Safety Work."
+    "Buongiorno, vorrei informazioni sui corsi di formazione e servizi di sicurezza sul lavoro Safety Works."
   );
   const whatsappHref = `https://wa.me/393505973817?text=${whatsappMessage}`;
 
@@ -95,7 +95,7 @@ export default function FloatingContactWidget() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white tracking-tight leading-tight">
-                  Supporto Rapido Safety Work
+                  Supporto Rapido Safety Works
                 </h4>
                 <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium mt-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

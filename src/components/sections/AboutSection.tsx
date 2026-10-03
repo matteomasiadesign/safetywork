@@ -9,7 +9,7 @@ export default function AboutSection() {
       <div className="absolute inset-0 z-0">
         <img
           src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=2000&auto=format&fit=crop&q=80"
-          alt="Safety Work Team"
+          alt="Safety Works Team"
           loading="lazy"
           className="w-full h-full object-cover object-center opacity-40 mix-blend-overlay"
         />
