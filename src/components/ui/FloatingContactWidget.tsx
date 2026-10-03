@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Phone, PhoneCall, X, Shield, Clock, ArrowUpRight, MessageSquare } from "lucide-react";
-import { COMPANY_CONFIG } from "@/config/company";
+import { whatsappNumber, type CompanyContacts } from "@/lib/content/format";
 import BrandStripe from "@/components/ui/BrandStripe";
 
 // Icona vettoriale ufficiale WhatsApp ad alta fedeltà
@@ -20,7 +20,7 @@ function WhatsAppIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-export default function FloatingContactWidget() {
+export default function FloatingContactWidget({ contacts }: { contacts: CompanyContacts }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -57,11 +57,11 @@ export default function FloatingContactWidget() {
 
   if (isExcludedPage) return null;
 
-  const phoneHref = `tel:${COMPANY_CONFIG.contacts.phoneClean}`;
+  const phoneHref = contacts.phoneHref;
   const whatsappMessage = encodeURIComponent(
     "Buongiorno, vorrei informazioni sui corsi di formazione e servizi di sicurezza sul lavoro Safety Works."
   );
-  const whatsappHref = `https://wa.me/393505973817?text=${whatsappMessage}`;
+  const whatsappHref = `https://wa.me/${whatsappNumber(contacts.phone)}?text=${whatsappMessage}`;
 
   return (
     <div
@@ -150,7 +150,7 @@ export default function FloatingContactWidget() {
                     Chiama al Telefono
                   </span>
                   <span className="block text-[11px] font-mono text-slate-600 font-semibold">
-                    {COMPANY_CONFIG.contacts.phone}
+                    {contacts.phone}
                   </span>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import { COMPANY_CONFIG } from "@/config/company";
-import FloatingContactWidget from "@/components/ui/FloatingContactWidget";
+import SiteFloatingContact from "@/components/ui/SiteFloatingContact";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -65,7 +65,7 @@ export default function RootLayout({
     <html lang="it" className={`scroll-smooth ${plusJakarta.variable} ${inter.variable}`}>
       <body className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-brand-cyan selection:text-white font-sans antialiased">
         {children}
-        <FloatingContactWidget />
+        <SiteFloatingContact />
       </body>
     </html>
   );

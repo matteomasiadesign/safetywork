@@ -4,6 +4,10 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 import { Shield, FileText, Award, HardHat, Settings, CheckCircle2 } from "lucide-react";
 import { COMPANY_CONFIG } from "@/config/company";
+import RichText from "@/components/ui/RichText";
+import { getSiteContent } from "@/lib/data/content";
+
+export const revalidate = 60; // ISR ogni 60 secondi (e subito dopo ogni modifica dall'admin)
 
 export const metadata: Metadata = {
   title: `Chi Siamo & Metodo Operativo | ${COMPANY_CONFIG.name}`,
@@ -11,50 +15,22 @@ export const metadata: Metadata = {
     "Oltre 15 anni di esperienza nella consulenza, progettazione antincendio e formazione accreditata per la salute e sicurezza sul lavoro.",
 };
 
-const PILLARS = [
-  {
-    num: "01",
-    code: "CONSULENZA // GESTIONE",
-    title: "Consulenza e Gestione",
-    subtitle: "Gestione Documentale & Incarichi",
-    image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80",
-    desc: "Supportiamo le imprese nella gestione completa della sicurezza, dalla redazione del DVR (Documento di Valutazione dei Rischi) alla gestione documentale quotidiana e all'assunzione diretta di incarichi come Responsabile del Servizio di Prevenzione e Protezione (RSPP).",
-    tag: "D.Lgs. 81/08",
-    icon: FileText,
-  },
-  {
-    num: "02",
-    code: "FORMAZIONE // TRAINING",
-    title: "Formazione Accreditata",
-    subtitle: "Corsi per ogni figura aziendale",
-    image: "https://images.unsplash.com/photo-1573164713988-8665fc963095?w=800&auto=format&fit=crop&q=80",
-    desc: "Progettiamo ed eroghiamo corsi di formazione obbligatori e specifici per lavoratori, dirigenti, preposti, RSPP, addetti antincendio, addetti al primo soccorso e abilitazione per attrezzature di lavoro.",
-    tag: "D.Lgs 81/08",
-    icon: Award,
-  },
-  {
-    num: "03",
-    code: "CANTIERI // OPERATIVITÀ",
-    title: "Gestione Cantieri",
-    subtitle: "Incarichi CSE e HSE",
-    image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&auto=format&fit=crop&q=80",
-    desc: "Gestiamo la sicurezza all'interno dei cantieri temporanei e mobili offrendo supporto tecnico operativo attraverso incarichi diretti come Coordinatore della Sicurezza in fase di Esecuzione (CSE) e Health, Safety & Environment Manager (HSE).",
-    tag: "Titolo IV D.Lgs 81/08",
-    icon: HardHat,
-  },
-  {
-    num: "04",
-    code: "CONTROLLO // AUDIT",
-    title: "Controllo e Verifiche",
-    subtitle: "Audit e Assistenza Ispettiva",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80",
-    desc: "Monitoriamo costantemente gli adempimenti, pianifichiamo le scadenze e supportiamo attivamente l'azienda durante le verifiche ispettive da parte degli organi di vigilanza (ASL, ITL, VVF) e negli audit interni.",
-    tag: "Compliance & Metodologia",
-    icon: Settings,
-  },
-];
+const PILLAR_ICONS = [FileText, Award, HardHat, Settings] as const;
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const content = await getSiteContent();
+
+  const pillars = ([1, 2, 3, 4] as const).map((n) => ({
+    num: String(n).padStart(2, "0"),
+    code: content[`about.pillar${n}.code`],
+    title: content[`about.pillar${n}.title`],
+    subtitle: content[`about.pillar${n}.subtitle`],
+    desc: content[`about.pillar${n}.text`],
+    tag: content[`about.pillar${n}.tag`],
+    image: content[`about.pillar${n}.image`],
+    icon: PILLAR_ICONS[n - 1],
+  }));
+
   return (
     <div className="flex flex-col min-h-screen bg-white text-slate-900">
       <SiteHeader />
@@ -64,7 +40,7 @@ export default function AboutPage() {
         <section className="relative py-20 lg:py-28 bg-slate-900 overflow-hidden">
           <div className="absolute inset-0 z-0">
             <img
-              src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=2000&auto=format&fit=crop&q=80"
+              src={content["about.hero.image"]}
               alt="Il nostro Team"
               className="w-full h-full object-cover opacity-20 mix-blend-overlay"
             />
@@ -77,10 +53,10 @@ export default function AboutPage() {
               <span>{COMPANY_CONFIG.name}</span>
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight mb-6 text-balance">
-              La Nostra <span className="text-[#008e97]">Storia</span> e il Nostro <span className="text-[#df0000]">Metodo</span>
+              <RichText text={content["about.hero.title"]} highlight={["text-[#008e97]", "text-[#df0000]"]} />
             </h1>
             <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
-              Oltre 15 anni di esperienza dedicati a trasformare la sicurezza sul lavoro da un semplice obbligo di legge a un asset organizzativo strategico per le imprese.
+              {content["about.hero.subtitle"]}
             </p>
           </div>
         </section>
@@ -91,24 +67,23 @@ export default function AboutPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               <div>
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-6">
-                  Il nostro approccio alla <span className="text-[#008e97]">Prevenzione</span>
+                  <RichText text={content["about.approach.title"]} highlight="text-[#008e97]" />
                 </h2>
                 <div className="space-y-6 text-slate-600 leading-relaxed text-base sm:text-lg">
-                  <p>
-                    <strong>{COMPANY_CONFIG.name}</strong> nasce con l'obiettivo di affiancare datori di lavoro, RSPP e professionisti nella complessa gestione degli adempimenti previsti dal <strong>D.Lgs. 81/2008</strong> e dalle normative collegate.
-                  </p>
-                  <p>
-                    Crediamo fermamente che la tutela della salute nei luoghi di lavoro non debba essere un ostacolo burocratico, bensì un valore etico ed economico: un'azienda conforme è un'azienda più produttiva, affidabile e protetta da rischi sanzionatori o penali.
-                  </p>
-                  <p>
-                    Il nostro team multidisciplinare è composto da <strong>ingegneri, tecnici della prevenzione e docenti formatori qualificati</strong>, in grado di operare sia con sopralluoghi tecnici asseverati sia con didattica accreditata.
-                  </p>
+                  {(["about.approach.text1", "about.approach.text2", "about.approach.text3"] as const).map(
+                    (key) =>
+                      content[key].trim() && (
+                        <p key={key}>
+                          <RichText text={content[key]} />
+                        </p>
+                      )
+                  )}
                 </div>
               </div>
               <div className="relative">
                 <div className="absolute -inset-4 bg-[#e6f6f7] rounded-3xl transform rotate-3 -z-10"></div>
                 <img
-                  src="https://images.unsplash.com/photo-1531538606174-0f90ff5dce83?w=800&auto=format&fit=crop&q=80"
+                  src={content["about.approach.image"]}
                   alt="Riunione sulla sicurezza"
                   className="rounded-2xl shadow-xl w-full h-auto object-cover"
                 />
@@ -122,15 +97,15 @@ export default function AboutPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-4">
-                I Nostri Pilastri Operativi
+                {content["about.pillars.title"]}
               </h2>
               <p className="text-lg text-slate-600">
-                Copertura normativa a 360 gradi per la piena conformità di ogni ambiente di lavoro.
+                {content["about.pillars.subtitle"]}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {PILLARS.map((pillar) => {
+              {pillars.map((pillar) => {
                 const Icon = pillar.icon;
                 return (
                   <div

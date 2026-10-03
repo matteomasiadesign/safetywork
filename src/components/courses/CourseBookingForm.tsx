@@ -20,9 +20,10 @@ import BrandStripe from "@/components/ui/BrandStripe";
 
 interface CourseBookingFormProps {
   course: Course;
+  phoneHref: string;
 }
 
-export default function CourseBookingForm({ course }: CourseBookingFormProps) {
+export default function CourseBookingForm({ course, phoneHref }: CourseBookingFormProps) {
   const [clientType, setClientType] = useState<"privato" | "azienda">("privato");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -160,7 +161,7 @@ export default function CourseBookingForm({ course }: CourseBookingFormProps) {
             <span>Nuova Iscrizione</span>
           </button>
           <a
-            href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+            href={phoneHref}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold transition-colors shadow-xs"
           >
             <PhoneCall className="w-3.5 h-3.5" />

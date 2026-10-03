@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { COMPANY_CONFIG } from "@/config/company";
 import BrandStripe from "@/components/ui/BrandStripe";
+import { companyContacts } from "@/lib/content/format";
+import type { ContentSlice } from "@/lib/content/schema";
 import {
   Mail,
   Phone,
@@ -16,7 +18,8 @@ import {
   Check,
 } from "lucide-react";
 
-export default function ContactSection() {
+export default function ContactSection({ content }: { content: ContentSlice<"home.contact." | "company."> }) {
+  const contacts = companyContacts(content);
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [stepError, setStepError] = useState<string>("");
 
@@ -133,10 +136,10 @@ export default function ContactSection() {
           <div className="lg:col-span-5 space-y-7">
             <div>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                Parla con il nostro team
+                {content["home.contact.title"]}
               </h2>
               <p className="mt-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
-                I nostri tecnici e docenti sono a tua disposizione per chiarimenti normativi sul D.Lgs. 81/08, piani formativi aziendali o preventivi personalizzati.
+                {content["home.contact.subtitle"]}
               </p>
             </div>
 
@@ -151,7 +154,7 @@ export default function ContactSection() {
                     Sede Operativa & Aule Formazione
                   </span>
                   <span className="text-sm font-medium text-slate-800 leading-snug">
-                    {COMPANY_CONFIG.headquarters.fullAddress}
+                    {contacts.address}
                   </span>
                 </div>
               </div>
@@ -165,10 +168,10 @@ export default function ContactSection() {
                     Recapito Telefonico
                   </span>
                   <a
-                    href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+                    href={contacts.phoneHref}
                     className="text-base font-bold text-slate-900 hover:text-[#008e97] transition-colors"
                   >
-                    {COMPANY_CONFIG.contacts.phone}
+                    {contacts.phone}
                   </a>
                 </div>
               </div>
@@ -182,10 +185,10 @@ export default function ContactSection() {
                     Email di Contatto
                   </span>
                   <a
-                    href={`mailto:${COMPANY_CONFIG.contacts.email}`}
+                    href={`mailto:${contacts.email}`}
                     className="text-sm font-medium text-slate-900 hover:text-[#008e97] transition-colors"
                   >
-                    {COMPANY_CONFIG.contacts.email}
+                    {contacts.email}
                   </a>
                 </div>
               </div>
@@ -199,7 +202,7 @@ export default function ContactSection() {
                     Orari Segreteria
                   </span>
                   <span className="text-sm font-medium text-slate-800">
-                    Lunedì - Venerdì: 08:30 - 18:30
+                    {contacts.hours}
                   </span>
                 </div>
               </div>

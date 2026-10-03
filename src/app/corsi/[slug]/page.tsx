@@ -19,6 +19,8 @@ import {
   Lock,
 } from "lucide-react";
 import { COMPANY_CONFIG } from "@/config/company";
+import { getSiteContent } from "@/lib/data/content";
+import { companyContacts } from "@/lib/content/format";
 
 interface PageProps {
   params: {
@@ -61,6 +63,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
   if (!course) {
     notFound();
   }
+
+  const contacts = companyContacts(await getSiteContent());
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -189,14 +193,14 @@ export default async function CourseDetailPage({ params }: PageProps) {
                 </p>
                 <div className="flex flex-wrap items-center gap-4">
                   <a
-                    href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+                    href={contacts.phoneHref}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold transition-colors"
                   >
                     <PhoneCall className="w-3.5 h-3.5" />
                     <span>Contatta l'ufficio corsi</span>
                   </a>
                   <span className="text-xs text-slate-400 font-mono">
-                    {COMPANY_CONFIG.contacts.phone}
+                    {contacts.phone}
                   </span>
                 </div>
               </div>
@@ -206,7 +210,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
             <div className="lg:col-span-5">
               <div className="sticky top-[88px]">
                 {course.is_open_for_enrollment ? (
-                  <CourseBookingForm course={course} />
+                  <CourseBookingForm course={course} phoneHref={contacts.phoneHref} />
                 ) : (
                   <div className="bg-white border border-slate-200 rounded-3xl shadow-lg p-8 text-center space-y-4">
                     <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
@@ -218,11 +222,11 @@ export default async function CourseDetailPage({ params }: PageProps) {
                       prossime edizioni o per organizzare una sessione dedicata alla tua azienda.
                     </p>
                     <a
-                      href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+                      href={contacts.phoneHref}
                       className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold uppercase tracking-wider transition-colors"
                     >
                       <PhoneCall className="w-4 h-4" />
-                      <span>{COMPANY_CONFIG.contacts.phone}</span>
+                      <span>{contacts.phone}</span>
                     </a>
                   </div>
                 )}

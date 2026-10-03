@@ -7,34 +7,40 @@ import ServicesSection from "@/components/sections/ServicesSection";
 import ContactSection from "@/components/sections/ContactSection";
 import MapSection from "@/components/sections/MapSection";
 import { getPublishedCourses, getPublishedServices } from "@/lib/data/catalog";
+import { getSiteContent } from "@/lib/data/content";
+import { pickContent } from "@/lib/content/schema";
 
 export const revalidate = 60; // ISR ogni 60 secondi (e subito dopo ogni modifica dall'admin)
 
 export default async function HomePage() {
   // Se Supabase non risponde l'errore sale a app/error.tsx: nessun dato di ripiego.
-  const [courses, services] = await Promise.all([getPublishedCourses(), getPublishedServices()]);
+  const [courses, services, content] = await Promise.all([
+    getPublishedCourses(),
+    getPublishedServices(),
+    getSiteContent(),
+  ]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-slate-900">
       <SiteHeader />
       <main className="flex-grow">
         {/* 1. Hero */}
-        <HeroSection />
+        <HeroSection content={pickContent(content, "home.hero.")} />
 
         {/* 2. Corsi del momento */}
-        <TrendingCoursesSection courses={courses} />
+        <TrendingCoursesSection courses={courses} content={content} />
 
         {/* 3. Chi siamo */}
-        <AboutSection />
+        <AboutSection content={content} />
 
         {/* 4. Servizi di sicurezza */}
-        <ServicesSection services={services} />
+        <ServicesSection services={services} content={content} />
 
         {/* 5. Contatti */}
-        <ContactSection />
+        <ContactSection content={pickContent(content, "home.contact.", "company.")} />
 
         {/* 6. Mappa della sede operativa */}
-        <MapSection />
+        <MapSection content={content} />
       </main>
       <SiteFooter />
     </div>

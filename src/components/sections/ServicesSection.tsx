@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import Link from "@/components/ui/Link";
 import type { ServiceItem } from "@/lib/types/database";
-import { COMPANY_CONFIG } from "@/config/company";
 import BrandStripe from "@/components/ui/BrandStripe";
+import RichText from "@/components/ui/RichText";
+import { companyContacts } from "@/lib/content/format";
+import type { SiteContent } from "@/lib/content/schema";
 
 const SERVICE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   GraduationCap,
@@ -35,8 +37,8 @@ const SERVICE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
   PhoneCall,
 };
 
-export default function ServicesSection({ services }: { services: ServiceItem[] }) {
-
+export default function ServicesSection({ services, content }: { services: ServiceItem[]; content: SiteContent }) {
+  const contacts = companyContacts(content);
 
   return (
     <section id="servizi" className="py-20 sm:py-28 bg-tech-blueprint-slate text-slate-900 relative overflow-hidden border-t border-slate-200">
@@ -56,13 +58,13 @@ export default function ServicesSection({ services }: { services: ServiceItem[] 
         <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-16 gap-6">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#e6f6f7] border border-slate-200 text-slate-900 text-xs font-bold uppercase tracking-wider mb-4 shadow-xs whitespace-nowrap">
-              <span>Soluzioni Tecniche • D.Lgs. 81/08</span>
+              <span>{content["home.services.badge"]}</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight text-balance">
-              Servizi di Sicurezza e Ingegneria
+              <RichText text={content["home.services.title"]} />
             </h2>
             <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed font-normal text-pretty">
-              Interventi specialistici per azzerare i rischi sanzionatori e garantire continuità e sicurezza operativa ad ogni settore d'impresa.
+              {content["home.services.subtitle"]}
             </p>
           </div>
 
@@ -70,7 +72,7 @@ export default function ServicesSection({ services }: { services: ServiceItem[] 
             href="/#contatti"
             className="w-fit inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-white text-slate-900 hover:text-[#008e97] text-xs font-bold uppercase tracking-wider border border-slate-200 hover:border-[#008e97]/40 shadow-xs transition-all group whitespace-nowrap"
           >
-            <span>Richiedi Check-Up Tecnico</span>
+            <span>{content["home.services.button"]}</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1 shrink-0" />
           </Link>
         </div>
@@ -179,25 +181,25 @@ export default function ServicesSection({ services }: { services: ServiceItem[] 
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-mono text-[10px] font-bold text-[#df0000] uppercase tracking-wider bg-[#fdf2f2] px-2 py-0.5 rounded-full border border-[#df0000]/20 whitespace-nowrap">
-                  FAST TRACK • RISPOSTA H24
+                  {content["home.services.alert_tag"]}
                 </span>
-                
+
               </div>
               <h4 className="text-lg font-bold text-slate-900 text-balance">
-                Hai ricevuto una prescrizione o un verbale da ASL / ITL / Vigili del Fuoco?
+                {content["home.services.alert_title"]}
               </h4>
               <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed font-normal text-pretty">
-                I nostri periti e ingegneri intervengono entro 24 ore con sopralluogo urgente per predisporre le memorie tecniche e regolarizzare la posizione aziendale entro i termini perentori.
+                {content["home.services.alert_text"]}
               </p>
             </div>
           </div>
 
           <a
-            href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+            href={contacts.phoneHref}
             className="flex-shrink-0 inline-flex items-center gap-2 px-6 py-3.5 bg-[#df0000] hover:bg-[#be0000] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow-md transition-all whitespace-nowrap"
           >
             <PhoneCall className="w-4 h-4 shrink-0" />
-            <span>Intervento Ispettivo Urgente</span>
+            <span>{content["home.services.alert_button"]}</span>
           </a>
         </div>
       </div>

@@ -6,6 +6,7 @@ import Link from "@/components/ui/Link";
 import { ArrowUp, Mail, Phone, MapPin, CheckCircle2, PhoneCall, ArrowRight } from "lucide-react";
 import { COMPANY_CONFIG } from "@/config/company";
 import BrandStripe from "@/components/ui/BrandStripe";
+import type { CompanyContacts } from "@/lib/content/format";
 
 export interface FooterCourseLink {
   name: string;
@@ -15,9 +16,11 @@ export interface FooterCourseLink {
 interface FooterProps {
   /** Corsi in evidenza mostrati nella colonna "Corsi Principali" (dal database). */
   courseLinks?: FooterCourseLink[];
+  /** Recapiti aziendali (modificabili da /admin). */
+  contacts: CompanyContacts;
 }
 
-export default function Footer({ courseLinks = [] }: FooterProps) {
+export default function Footer({ courseLinks = [], contacts }: FooterProps) {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -74,11 +77,11 @@ export default function Footer({ courseLinks = [] }: FooterProps) {
 
             <div className="flex flex-wrap items-center gap-3">
               <a
-                href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+                href={contacts.phoneHref}
                 className="px-5 py-3 rounded-xl bg-[#f58220] hover:bg-[#df6f11] text-white text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-2"
               >
                 <PhoneCall className="w-4 h-4" />
-                <span>{COMPANY_CONFIG.contacts.phone}</span>
+                <span>{contacts.phone}</span>
               </a>
               <Link
                 href="/#contatti"
@@ -124,18 +127,18 @@ export default function Footer({ courseLinks = [] }: FooterProps) {
             <div className="pt-2 flex flex-col space-y-3 text-xs text-slate-300">
               <div className="border-l-2 border-[#008e97] pl-3 py-0.5">
                 <span className="block text-[10px] uppercase font-bold text-slate-400">Sede Operativa & Aule</span>
-                <span className="font-medium text-white">{COMPANY_CONFIG.headquarters.fullAddress}</span>
+                <span className="font-medium text-white">{contacts.address}</span>
               </div>
               <div className="border-l-2 border-[#f58220] pl-3 py-0.5">
                 <span className="block text-[10px] uppercase font-bold text-slate-400">Linea Telefonica</span>
-                <a href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`} className="font-bold text-white hover:text-[#f58220] transition-colors">
-                  {COMPANY_CONFIG.contacts.phone}
+                <a href={contacts.phoneHref} className="font-bold text-white hover:text-[#f58220] transition-colors">
+                  {contacts.phone}
                 </a>
               </div>
               <div className="border-l-2 border-[#df0000] pl-3 py-0.5">
                 <span className="block text-[10px] uppercase font-bold text-slate-400">Canale Email</span>
-                <a href={`mailto:${COMPANY_CONFIG.contacts.email}`} className="font-medium text-white hover:text-[#008e97] transition-colors break-all sm:break-normal">
-                  {COMPANY_CONFIG.contacts.email}
+                <a href={`mailto:${contacts.email}`} className="font-medium text-white hover:text-[#008e97] transition-colors break-all sm:break-normal">
+                  {contacts.email}
                 </a>
               </div>
             </div>

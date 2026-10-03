@@ -13,6 +13,7 @@ import CoursesManager from "@/components/admin/CoursesManager";
 import CategoriesManager from "@/components/admin/CategoriesManager";
 import ServicesManager from "@/components/admin/ServicesManager";
 import AgendaManager from "@/components/admin/AgendaManager";
+import ContentEditor from "@/components/admin/ContentEditor";
 
 type Toast = { message: string; tone: "success" | "error" };
 
@@ -22,6 +23,7 @@ const TAB_TITLES: Record<AdminTab, string> = {
   courses: "Catalogo Corsi",
   categories: "Categorie Formative",
   services: "Servizi HSE",
+  content: "Contenuti del Sito",
 };
 
 function AdminDashboard() {
@@ -32,6 +34,7 @@ function AdminDashboard() {
     services,
     inquiries,
     events,
+    siteContent,
     isLoading,
     loadError,
     reload,
@@ -48,6 +51,7 @@ function AdminDashboard() {
     deleteInquiry,
     saveEvent,
     deleteEvent,
+    saveSiteContent,
     cleanupOrphanImages,
   } = useAdminData();
 
@@ -57,6 +61,16 @@ function AdminDashboard() {
   const [userEmail, setUserEmail] = useState("");
   const [preselectedInquiry, setPreselectedInquiry] = useState<Inquiry | null>(null);
   const [isCleaning, setIsCleaning] = useState(false);
+  const [contentDirty, setContentDirty] = useState(false);
+
+  // Cambiando sezione dell'admin si perderebbero le modifiche non salvate dell'editor contenuti.
+  const handleSelectTab = (tab: AdminTab) => {
+    if (tab !== activeTab && activeTab === "content" && contentDirty) {
+      if (!window.confirm("Hai modifiche non salvate nei Contenuti del Sito. Vuoi uscire e perderle?")) return;
+      setContentDirty(false);
+    }
+    setActiveTab(tab);
+  };
 
   useEffect(() => {
     createClient()
@@ -135,7 +149,7 @@ function AdminDashboard() {
 
       <AdminSidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleSelectTab}
         inquiriesCount={inquiries.length}
         newInquiriesCount={newInquiriesCount}
         coursesCount={courses.length}
@@ -174,7 +188,7 @@ function AdminDashboard() {
               onClick={handleCleanupImages}
               disabled={isCleaning}
               className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-xl bg-slate-50 hover:bg-[#e6f6f7] hover:text-[#008e97] text-slate-700 text-xs font-semibold border border-slate-200 transition-colors shadow-2xs disabled:opacity-50"
-              title="Elimina da Storage le immagini non più usate da nessun corso o servizio"
+              title="Elimina da Storage le immagini non più usate da corsi, servizi o contenuti del sito"
             >
               <ImageOff className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#008e97]" />
               <span className="hidden lg:inline ml-1.5">{isCleaning ? "Pulizia..." : "Pulisci immagini"}</span>
@@ -277,6 +291,15 @@ function AdminDashboard() {
                   onRenameCategory={renameCategory}
                   onDeleteCategory={deleteCategory}
                   showToast={showToast}
+                />
+              )}
+
+              {activeTab === "content" && (
+                <ContentEditor
+                  overrides={siteContent}
+                  onSave={saveSiteContent}
+                  showToast={showToast}
+                  onDirtyChange={setContentDirty}
                 />
               )}
 

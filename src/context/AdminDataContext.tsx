@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toServiceItem } from "@/lib/data/serviceMapper";
 import { slugify } from "@/lib/utils/slug";
 import { IMAGE_BUCKET, storagePathFromUrl } from "@/lib/images/storage";
+import { CONTENT_DEFAULTS, isContentKey, type ContentKey } from "@/lib/content/schema";
 import { MAX_IMAGE_BYTES } from "@/lib/images/compress";
 import type {
   AgendaEvent,
@@ -31,7 +32,7 @@ const COURSE_SELECT = "*, category:categories(id, name, slug, sort_order)";
 const INQUIRY_LIMIT = 500;
 const INQUIRY_POLL_MS = 60_000;
 const ORPHAN_MIN_AGE_MS = 10 * 60 * 1000; // non toccare file caricati negli ultimi 10 minuti
-const IMAGE_FOLDERS = ["courses", "services"] as const;
+const IMAGE_FOLDERS = ["courses", "services", "content"] as const;
 
 export type ImageFolder = (typeof IMAGE_FOLDERS)[number];
 
@@ -51,6 +52,12 @@ export type ServiceInput = {
 
 export type AgendaEventInput = Omit<AgendaEvent, "id" | "created_at">;
 
+/** Valori dei contenuti del sito da salvare: stringa = nuovo valore, null = torna al testo originale. */
+export type SiteContentChanges = Partial<Record<ContentKey, string | null>>;
+
+/** Valori personalizzati salvati nel database (le chiavi assenti usano il testo originale). */
+export type SiteContentOverrides = Partial<Record<ContentKey, string>>;
+
 export type CourseFlags = Partial<Pick<CourseInput, "is_featured" | "is_open_for_enrollment" | "is_published">>;
 
 interface AdminDataContextType {
@@ -59,6 +66,7 @@ interface AdminDataContextType {
   services: ServiceItem[];
   inquiries: Inquiry[];
   events: AgendaEvent[];
+  siteContent: SiteContentOverrides;
   isLoading: boolean;
   loadError: string | null;
   reload: () => Promise<void>;
@@ -81,6 +89,9 @@ interface AdminDataContextType {
 
   saveEvent: (input: AgendaEventInput, id?: string) => Promise<AgendaEvent>;
   deleteEvent: (id: string) => Promise<void>;
+
+  /** images: foto già compresse, indicate per chiave; vengono caricate solo se il salvataggio va a buon fine. */
+  saveSiteContent: (changes: SiteContentChanges, images?: Partial<Record<ContentKey, File>>) => Promise<void>;
 
   /** Rimuove da Storage le immagini non più usate da nessun corso o servizio. Restituisce quante. */
   cleanupOrphanImages: () => Promise<number>;
@@ -137,6 +148,12 @@ function rowToInquiry(row: Tables<"inquiries">): Inquiry {
     city: row.city ?? undefined,
     postalCode: row.postal_code ?? undefined,
   };
+}
+
+function rowsToOverrides(rows: { key: string; value: string }[]): SiteContentOverrides {
+  const overrides: SiteContentOverrides = {};
+  for (const row of rows) if (isContentKey(row.key)) overrides[row.key] = row.value;
+  return overrides;
 }
 
 const hhmm = (time: string | null) => (time ? time.slice(0, 5) : undefined);
@@ -215,6 +232,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [events, setEvents] = useState<AgendaEvent[]>([]);
+  const [siteContent, setSiteContent] = useState<SiteContentOverrides>({});
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -233,19 +251,21 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     setLoadError(null);
     try {
       const supabase = getSupabase();
-      const [cats, crs, srv, evt] = await Promise.all([
+      const [cats, crs, srv, evt, cnt] = await Promise.all([
         supabase.from("categories").select("*").order("sort_order").order("name"),
         supabase.from("courses").select(COURSE_SELECT).order("created_at", { ascending: false }),
         supabase.from("services").select("*").order("sort_order").order("code"),
         supabase.from("agenda_events").select("*").order("start_date").order("start_time"),
+        supabase.from("site_content").select("key, value"),
       ]);
-      const failed = cats.error || crs.error || srv.error || evt.error;
+      const failed = cats.error || crs.error || srv.error || evt.error || cnt.error;
       if (failed) throw new Error(errorMessage(failed));
 
       setCategories(cats.data ?? []);
       setCourses((crs.data ?? []) as unknown as Course[]);
       setServices((srv.data ?? []).map(toServiceItem));
       setEvents((evt.data ?? []).map(rowToEvent));
+      setSiteContent(rowsToOverrides(cnt.data ?? []));
       await loadInquiries();
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Errore di connessione a Supabase.");
@@ -311,13 +331,14 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       if (!path || !url) return;
 
       const supabase = getSupabase();
-      const [usedByCourse, usedByService] = await Promise.all([
+      const [usedByCourse, usedByService, usedByContent] = await Promise.all([
         supabase.from("courses").select("id", { count: "exact", head: true }).eq("image_url", url),
         supabase.from("services").select("id", { count: "exact", head: true }).eq("image_url", url),
+        supabase.from("site_content").select("key", { count: "exact", head: true }).eq("value", url),
       ]);
       // Nel dubbio (errore di lettura) il file si tiene: meglio un orfano che un'immagine rotta.
-      if (usedByCourse.error || usedByService.error) return;
-      if ((usedByCourse.count ?? 0) > 0 || (usedByService.count ?? 0) > 0) return;
+      if (usedByCourse.error || usedByService.error || usedByContent.error) return;
+      if ((usedByCourse.count ?? 0) > 0 || (usedByService.count ?? 0) > 0 || (usedByContent.count ?? 0) > 0) return;
 
       await removeFromStorage([path]);
     },
@@ -327,15 +348,20 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   const cleanupOrphanImages = useCallback(async (): Promise<number> => {
     const supabase = getSupabase();
 
-    const [crs, srv] = await Promise.all([
+    const [crs, srv, cnt] = await Promise.all([
       supabase.from("courses").select("image_url"),
       supabase.from("services").select("image_url"),
+      supabase.from("site_content").select("value"),
     ]);
-    if (crs.error || srv.error) throw new Error(errorMessage((crs.error || srv.error)!));
+    if (crs.error || srv.error || cnt.error) throw new Error(errorMessage((crs.error || srv.error || cnt.error)!));
 
     const used = new Set<string>();
-    [...(crs.data ?? []), ...(srv.data ?? [])].forEach((row) => {
-      const path = storagePathFromUrl(row.image_url);
+    [
+      ...(crs.data ?? []).map((row) => row.image_url),
+      ...(srv.data ?? []).map((row) => row.image_url),
+      ...(cnt.data ?? []).map((row) => row.value),
+    ].forEach((url) => {
+      const path = storagePathFromUrl(url);
       if (path) used.add(path);
     });
 
@@ -652,6 +678,67 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     [getSupabase]
   );
 
+  // ------------------------------------------------------------ contenuti del sito
+  const saveSiteContent = useCallback(
+    async (changes: SiteContentChanges, images: Partial<Record<ContentKey, File>> = {}) => {
+      const supabase = getSupabase();
+      const keys = (Object.keys(changes) as ContentKey[]).filter((key) => isContentKey(key));
+      if (keys.length === 0) return;
+
+      // 1. Foto nuove su Storage (se poi il database rifiuta le modifiche vengono rimosse).
+      const uploadedPaths: string[] = [];
+      const values: Record<string, string | null> = {};
+      try {
+        for (const key of keys) {
+          const file = images[key];
+          if (file) {
+            const uploaded = await uploadImage(file, "content");
+            uploadedPaths.push(uploaded.path);
+            values[key] = uploaded.url;
+          } else {
+            values[key] = changes[key] ?? null;
+          }
+        }
+
+        const toSave = keys.filter((key) => values[key] !== null).map((key) => ({ key, value: values[key] as string }));
+        const toReset = keys.filter((key) => values[key] === null);
+
+        if (toSave.length > 0) {
+          const { error } = await supabase.from("site_content").upsert(toSave, { onConflict: "key" });
+          if (error) throw new Error(errorMessage(error));
+        }
+        if (toReset.length > 0) {
+          const { error } = await supabase.from("site_content").delete().in("key", toReset);
+          if (error) throw new Error(errorMessage(error));
+        }
+      } catch (err) {
+        await removeFromStorage(uploadedPaths);
+        throw err;
+      }
+
+      // 2. Stato locale allineato al database.
+      const previous = siteContent;
+      setSiteContent((prev) => {
+        const next = { ...prev };
+        for (const key of keys) {
+          const value = values[key];
+          if (value === null) delete next[key];
+          else next[key] = value;
+        }
+        return next;
+      });
+
+      // 3. Le vecchie immagini (se nostre e non più usate) vanno rimosse da Storage.
+      for (const key of keys) {
+        const old = previous[key];
+        if (old && old !== values[key] && old !== CONTENT_DEFAULTS[key]) await removeImageIfUnused(old);
+      }
+
+      await notifyPublicSite();
+    },
+    [getSupabase, removeFromStorage, removeImageIfUnused, siteContent, uploadImage]
+  );
+
   const value = useMemo<AdminDataContextType>(
     () => ({
       categories,
@@ -659,6 +746,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       services,
       inquiries,
       events,
+      siteContent,
       isLoading,
       loadError,
       reload,
@@ -675,6 +763,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       deleteInquiry,
       saveEvent,
       deleteEvent,
+      saveSiteContent,
       cleanupOrphanImages,
     }),
     [
@@ -683,6 +772,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       services,
       inquiries,
       events,
+      siteContent,
       isLoading,
       loadError,
       reload,
@@ -699,6 +789,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       deleteInquiry,
       saveEvent,
       deleteEvent,
+      saveSiteContent,
       cleanupOrphanImages,
     ]
   );

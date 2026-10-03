@@ -9,9 +9,10 @@ import {
   X,
   UserCheck,
   CalendarDays,
+  PenLine,
 } from "lucide-react";
 
-export type AdminTab = "inquiries" | "agenda" | "courses" | "categories" | "services";
+export type AdminTab = "inquiries" | "agenda" | "courses" | "categories" | "services" | "content";
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -78,6 +79,13 @@ export default function AdminSidebar({
       badge: `${servicesCount}`,
       badgeColor: "bg-slate-800 text-slate-400 border border-slate-700/60",
       icon: Layers,
+    },
+    {
+      id: "content" as AdminTab,
+      label: "Contenuti del Sito",
+      badge: undefined,
+      badgeColor: "",
+      icon: PenLine,
     },
   ];
 

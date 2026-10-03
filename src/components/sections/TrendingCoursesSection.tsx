@@ -3,14 +3,18 @@ import Link from "@/components/ui/Link";
 import { Course } from "@/lib/types/database";
 import CourseCard from "@/components/ui/CourseCard";
 import { ArrowRight, BookOpen, Sparkles } from "lucide-react";
+import RichText from "@/components/ui/RichText";
+import type { SiteContent } from "@/lib/content/schema";
 
 
 interface TrendingCoursesSectionProps {
   courses: Course[];
+  content: SiteContent;
 }
 
 export default function TrendingCoursesSection({
   courses,
+  content,
 }: TrendingCoursesSectionProps) {
   // Mostra SOLO i corsi a cui è già possibile iscriversi
   const openCourses = courses.filter((c) => c.is_open_for_enrollment);
@@ -32,15 +36,15 @@ export default function TrendingCoursesSection({
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#fdf2f2] border border-[#df0000]/30 text-[#df0000] text-xs font-bold uppercase tracking-wider mb-4 rounded-full shadow-xs">
               <span className="w-2 h-2 bg-[#df0000] rounded-full animate-pulse" />
-              <span>Scopri i corsi disponibili</span>
+              <span>{content["home.courses.badge"]}</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight text-balance">
-              Corsi del <span className="text-slate-900">Momento</span>
+              <RichText text={content["home.courses.title"]} />
             </h2>
 
             <p className="mt-3 text-base sm:text-lg text-slate-600 leading-relaxed font-normal text-pretty">
-              Sessioni formative confermate con posti disponibili in tempo reale. Seleziona una scheda per consultare i moduli didattici e bloccare direttamente la tua partecipazione.
+              {content["home.courses.subtitle"]}
             </p>
           </div>
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "@/components/ui/Link";
 import { Menu, X, PhoneCall, ChevronRight, ChevronDown } from "lucide-react";
-import { COMPANY_CONFIG } from "@/config/company";
+import type { CompanyContacts } from "@/lib/content/format";
 import BrandStripe from "@/components/ui/BrandStripe";
 
 export interface NavbarCourseLink {
@@ -15,9 +15,11 @@ export interface NavbarCourseLink {
 interface NavbarProps {
   /** Corsi in evidenza mostrati nel menu "Corsi" (arrivano dal database). */
   courseLinks?: NavbarCourseLink[];
+  /** Recapiti aziendali (modificabili da /admin). */
+  contacts: CompanyContacts;
 }
 
-export default function Navbar({ courseLinks = [] }: NavbarProps) {
+export default function Navbar({ courseLinks = [], contacts }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -126,7 +128,7 @@ export default function Navbar({ courseLinks = [] }: NavbarProps) {
             <div className="hidden md:flex items-center space-x-3 shrink-0">
               {/* Chiamata Diretta */}
               <a
-                href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+                href={contacts.phoneHref}
                 className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-900 hover:text-[#008e97] bg-white hover:bg-slate-50 border border-slate-200 hover:border-[#008e97]/40 rounded-full transition-all shadow-xs whitespace-nowrap"
                 title="Chiama direttamente"
               >
@@ -147,7 +149,7 @@ export default function Navbar({ courseLinks = [] }: NavbarProps) {
             {/* Mobile Menu Button */}
             <div className="flex md:hidden items-center space-x-2">
               <a
-                href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+                href={contacts.phoneHref}
                 className="p-2 text-slate-900 hover:text-[#008e97] hover:bg-slate-50 rounded-full border border-slate-200 flex items-center justify-center"
                 aria-label="Chiama direttamente"
               >
@@ -197,12 +199,12 @@ export default function Navbar({ courseLinks = [] }: NavbarProps) {
             </nav>
             <div className="pt-3 border-t border-slate-200 flex flex-col gap-2.5">
               <a
-                href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+                href={contacts.phoneHref}
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-900 bg-white border border-slate-200 hover:border-[#008e97] rounded-xl transition-colors"
               >
                 <PhoneCall className="w-4 h-4 text-[#008e97]" />
-                <span>Chiama: {COMPANY_CONFIG.contacts.phone}</span>
+                <span>Chiama: {contacts.phone}</span>
               </a>
               <Link
                 href="/#contatti"
