@@ -87,6 +87,12 @@ export function formatEditionDates(
   return `${start.day} ${monthOf(start)} ${start.year} – ${end.day} ${monthOf(end)} ${end.year}`;
 }
 
+/** Giorno e mese abbreviato di inizio edizione, es. { day: "14", month: "ott" }. */
+export function editionDayMonth(edition: Pick<CourseEdition, "start_date">): { day: string; month: string } {
+  const { day, month } = parse(edition.start_date);
+  return { day: String(day), month: MONTHS_SHORT[month - 1] };
+}
+
 /** Testo che identifica una data anche fuori dal sito, es. "12–13 novembre 2026 · Sassari". */
 export function editionLabel(
   edition: Pick<CourseEdition, "start_date" | "end_date" | "location">,

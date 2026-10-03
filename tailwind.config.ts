@@ -36,6 +36,7 @@ const config: Config = {
         },
       },
       fontFamily: {
+        display: ["var(--font-display)", "var(--font-plus-jakarta)", "system-ui", "sans-serif"],
         sans: [
           "var(--font-plus-jakarta)",
           '"Plus Jakarta Sans"',

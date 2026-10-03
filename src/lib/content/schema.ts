@@ -13,7 +13,7 @@ import { COMPANY_CONFIG } from "@/config/company";
  */
 export const CONTENT_DEFAULTS = {
   // ---------------------------------------------------------------- home: hero
-  "home.hero.image": "https://images.unsplash.com/photo-1581094288338-2314dddb7ece?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+  "home.hero.image": "https://images.unsplash.com/photo-1705579612477-20866d78deeb?auto=format&fit=crop&w=2070&q=80",
   "home.hero.badge": "Conformità Integrata D.Lgs. 81/08 & Certificazioni di Legge",
   "home.hero.title": "Consulenza e Formazione per la [[Sicurezza nei Luoghi di Lavoro]]",
   "home.hero.subtitle":

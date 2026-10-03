@@ -2,99 +2,138 @@ import React from "react";
 import Link from "@/components/ui/Link";
 import { Clock, Lock, MapPin, ArrowRight, Monitor, Layers, CalendarDays } from "lucide-react";
 import { Course } from "@/lib/types/database";
-import { formatEditionDates, modeLabel, normalizeMode, upcomingEditions } from "@/lib/courses/format";
+import {
+  editionDayMonth,
+  formatEditionDates,
+  modeLabel,
+  normalizeMode,
+  upcomingEditions,
+} from "@/lib/courses/format";
 
 interface CourseCardProps {
   course: Course;
+  /** "wide": immagine a sinistra e testo a destra (da md in su). Serve quando c'è un solo corso. */
+  variant?: "stack" | "wide";
 }
 
-export default function CourseCard({ course }: CourseCardProps) {
+const fallbackImage =
+  "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80";
+
+export default function CourseCard({ course, variant = "stack" }: CourseCardProps) {
   const mode = normalizeMode(course.mode);
   const ModeIcon = mode === "online" ? Monitor : mode === "misto" ? Layers : MapPin;
-  const nextEdition = upcomingEditions(course.editions)[0];
+  const editions = upcomingEditions(course.editions);
+  const next = editions[0];
+  const moreDates = editions.length - 1;
+  const wide = variant === "wide";
 
-  const fallbackImage =
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80";
+  const place = mode === "online" ? "Online" : next?.location || "Sede da definire";
+  const PlaceIcon = mode === "online" ? Monitor : MapPin;
 
   return (
-    <Link 
+    <Link
       to={`/corsi/${course.slug}`}
-      className="group relative block w-full h-[440px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500"
+      className={`group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-tech-card transition-all duration-300 hover:-translate-y-1 hover:border-[#008e97]/50 hover:shadow-card-hover ${
+        wide ? "md:flex-row" : ""
+      }`}
     >
-      {/* Immagine di Sfondo */}
-      <img
-        src={course.image_url || fallbackImage}
-        alt={course.title}
-        loading="lazy"
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-      />
-      
-      {/* Overlay Sfumato Inferiore (Sempre visibile per leggere il titolo) */}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent opacity-90 transition-opacity duration-500 group-hover:opacity-40" />
+      {/* Immagine con le due etichette di contesto: categoria (cosa) e modalità (come) */}
+      <div className={`relative aspect-[16/10] shrink-0 overflow-hidden bg-slate-200 ${wide ? "md:aspect-auto md:w-5/12" : ""}`}>
+        <img
+          src={course.image_url || fallbackImage}
+          alt={course.title}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-slate-950/60 to-transparent" />
 
-      {/* Overlay Scuro su Hover (per oscurare tutta la carta) */}
-      <div className="absolute inset-0 bg-slate-950/85 opacity-0 group-hover:opacity-100 transition-opacity duration-500 backdrop-blur-[2px]" />
-
-      {/* Contenitore Testi e Bottoni */}
-      <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-end z-20">
-        
-        {/* Info Sempre Visibili: Categoria, Luogo, Durata, Sessione, Titolo */}
-        <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
-          
-          {/* Unico gruppo ordinato di pills (impossibile che si sovrappongano) */}
-          <div className="flex flex-wrap items-center gap-1.5 mb-3">
-            <span className="inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#008e97] text-white rounded-lg shadow-xs shrink-0 whitespace-nowrap">
-              {course.category.name}
+        <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+          <span title={course.category.name} className="min-w-0 truncate rounded-md bg-[#008e97] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
+            {course.category.name}
+          </span>
+          {course.is_open_for_enrollment ? (
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-800 shadow-sm backdrop-blur">
+              <ModeIcon className="h-3 w-3 text-[#008e97]" />
+              {modeLabel(course.mode)}
             </span>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
-              <ModeIcon className="w-3 h-3 text-slate-300 shrink-0" />
-              <span>{modeLabel(course.mode)}</span>
+          ) : (
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-slate-900/85 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur">
+              <Lock className="h-3 w-3 text-[#f58220]" />
+              Iscrizioni chiuse
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Contenuto: titolo → descrizione → quando/dove → durata e azione */}
+      <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
+        <h3 className={`font-display font-bold ${wide ? "text-[1.4rem] md:text-3xl" : "text-[1.4rem]"} leading-[1.15] tracking-tight text-slate-900 transition-colors text-balance break-words line-clamp-3 group-hover:text-[#008e97]`}>
+          {course.title}
+        </h3>
+
+        {course.short_description && (
+          <p className="mt-2.5 text-sm leading-relaxed text-slate-600 line-clamp-2">{course.short_description}</p>
+        )}
+
+        <div className="mt-auto pt-5">
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-slate-200 bg-white">
+              {next ? (
+                <>
+                  <span className="font-display text-2xl font-bold leading-none text-slate-900">
+                    {editionDayMonth(next).day}
+                  </span>
+                  <span className="mt-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#008e97]">
+                    {editionDayMonth(next).month}
+                  </span>
+                </>
+              ) : (
+                <CalendarDays className="h-6 w-6 text-slate-400" />
+              )}
             </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
-              <Clock className="w-3 h-3 text-[#008e97] shrink-0" />
-              <span>{course.duration_hours} Ore</span>
+
+            <div className="min-w-0 flex-1">
+              {next ? (
+                <>
+                  <div className="text-sm font-semibold leading-snug text-slate-900 line-clamp-2">
+                    {formatEditionDates(next, { short: true })}
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                    <PlaceIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    <span className="truncate" title={place}>
+                      {place}
+                    </span>
+                  </div>
+                  {moreDates > 0 && (
+                    <div className="mt-1 text-[11px] font-semibold text-[#008e97]">
+                      +{moreDates} {moreDates === 1 ? "altra data" : "altre date"}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="text-sm font-semibold text-slate-700">Date da definire</div>
+                  <div className="mt-0.5 text-xs text-slate-500">Contattaci per le prossime edizioni</div>
+                </>
+              )}
             </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
-              <CalendarDays className="w-3 h-3 text-[#f58220] shrink-0" />
-              <span>{nextEdition ? formatEditionDates(nextEdition, { short: true }) : "Date da definire"}</span>
-            </div>
-            {nextEdition?.location && mode !== "online" && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
-                <MapPin className="w-3 h-3 text-[#df0000] shrink-0" />
-                <span>{nextEdition.location}</span>
-              </div>
-            )}
-            {!course.is_open_for_enrollment && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/80 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
-                <Lock className="w-3 h-3 text-[#f58220] shrink-0" />
-                <span>Iscrizioni chiuse</span>
-              </div>
-            )}
           </div>
 
-          <h3 className="text-xl font-bold text-white leading-snug tracking-tight drop-shadow-md line-clamp-3">
-            {course.title}
-          </h3>
-        </div>
-
-        {/* Blocco Nascosto: Descrizione e Pulsante (Appare su Hover) */}
-        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
-          <div className="overflow-hidden">
-            <div className="pt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 flex flex-col gap-4">
-              <p className="text-xs text-slate-300 line-clamp-2 font-normal leading-relaxed">
-                {course.short_description}
-              </p>
-              
-              <div className="inline-flex items-center justify-between w-full px-4 py-3 bg-[#df0000] hover:bg-[#df0000]/90 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-lg">
-                <span>{course.is_open_for_enrollment ? "Iscriviti al corso" : "Scopri il corso"}</span>
-                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                  <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform" />
-                </div>
-              </div>
-            </div>
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+              <Clock className="h-3.5 w-3.5 text-[#f58220]" />
+              {course.duration_hours} ore
+            </span>
+            <span
+              className={`inline-flex items-center gap-1.5 text-sm font-bold ${
+                course.is_open_for_enrollment ? "text-[#df0000]" : "text-slate-700"
+              }`}
+            >
+              {course.is_open_for_enrollment ? "Iscriviti" : "Scopri il corso"}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </span>
           </div>
         </div>
-
       </div>
     </Link>
   );

@@ -94,7 +94,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
         </div>
 
         {/* Course Header Banner */}
-        <section className="relative bg-slate-950 text-white py-14 lg:py-20 overflow-hidden">
+        <section className="relative bg-slate-950 text-white pt-28 pb-14 lg:pt-36 lg:pb-20 overflow-hidden">
           <div className="absolute inset-0 opacity-25">
             <img
               src={course.image_url || "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1600&auto=format&fit=crop&q=80"}

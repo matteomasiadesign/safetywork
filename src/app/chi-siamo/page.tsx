@@ -37,7 +37,7 @@ export default async function AboutPage() {
 
       <main className="flex-grow">
         {/* Page Hero */}
-        <section className="relative py-20 lg:py-28 bg-slate-900 overflow-hidden">
+        <section className="relative pt-32 pb-20 lg:pt-44 lg:pb-28 bg-slate-900 overflow-hidden">
           <div className="absolute inset-0 z-0">
             <img
               src={content["about.hero.image"]}

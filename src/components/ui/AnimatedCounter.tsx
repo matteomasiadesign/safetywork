@@ -13,11 +13,24 @@ export default function AnimatedCounter({ end, duration = 2000, decimals = 0, su
   const elementRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    let waiter: MutationObserver | null = null;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setIsVisible(true);
           observer.disconnect();
+          // Con il preloader attivo il conteggio parte solo quando la pagina viene scoperta.
+          const html = document.documentElement;
+          if (!html.hasAttribute("data-preloading")) {
+            setIsVisible(true);
+            return;
+          }
+          waiter = new MutationObserver(() => {
+            if (!html.hasAttribute("data-preloading")) {
+              waiter?.disconnect();
+              setIsVisible(true);
+            }
+          });
+          waiter.observe(html, { attributes: true, attributeFilter: ["data-preloading"] });
         }
       },
       { threshold: 0.1 }
@@ -29,6 +42,7 @@ export default function AnimatedCounter({ end, duration = 2000, decimals = 0, su
 
     return () => {
       observer.disconnect();
+      waiter?.disconnect();
     };
   }, []);
 

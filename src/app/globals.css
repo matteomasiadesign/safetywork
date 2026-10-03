@@ -133,6 +133,51 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
+  /* Hero: alone di luce che rivela i colori della foto attorno al cursore */
+  .hero-scanner {
+    --lx: 72%;
+    --ly: 36%;
+    -webkit-mask-image: radial-gradient(circle 300px at var(--lx) var(--ly), rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.45) 45%, transparent 100%);
+    mask-image: radial-gradient(circle 300px at var(--lx) var(--ly), rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.45) 45%, transparent 100%);
+  }
+
+  /* Hero: ingresso a parole (titolo) e dissolvenza (resto) */
+  .hero-word {
+    display: inline-block;
+    animation: hero-rise 0.95s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 70ms + 150ms);
+  }
+  .hero-fade {
+    animation: hero-fade 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: var(--d, 0ms);
+  }
+
+  @keyframes hero-rise {
+    from { transform: translateY(105%); }
+    to { transform: none; }
+  }
+  @keyframes hero-fade {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-word, .hero-fade { animation: none; }
+  }
+
+  /* Preloader: visibile solo mentre <html> ha data-preloading (lo imposta lo script del componente) */
+  #sw-preloader { display: none; }
+  html[data-preloading] #sw-preloader { display: flex; }
+  html[data-preloading] body { overflow: hidden; }
+  html[data-preloading] .hero-word,
+  html[data-preloading] .hero-fade { animation-play-state: paused; }
+
+  .sw-pre-letter {
+    display: inline-block;
+    animation: hero-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 45ms + 250ms);
+  }
+
   /* Nascondi scrollbar cross-browser */
   .no-scrollbar::-webkit-scrollbar,
   .scrollbar-none::-webkit-scrollbar {

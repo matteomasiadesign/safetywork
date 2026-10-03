@@ -88,9 +88,9 @@ export default function CoursesCatalog({ courses }: { courses: Course[] }) {
 
   return (
     <>
-      <main className="flex-grow pb-24">
+      <main className="flex-grow pt-[84px] pb-24">
         {/* Sticky Search & Filter Toolbar with Glassmorphism */}
-        <div className="sticky top-[68px] z-30 bg-white/75 hover:bg-white backdrop-blur-md border-b border-slate-200/80 py-3 shadow-xs transition-all duration-300 group/toolbar">
+        <div className="sticky top-[84px] z-30 bg-white/75 hover:bg-white backdrop-blur-md border-b border-slate-200/80 py-3 shadow-xs transition-all duration-300 group/toolbar">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row items-center gap-3">
               

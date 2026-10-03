@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter, Bricolage_Grotesque } from "next/font/google";
 import { COMPANY_CONFIG } from "@/config/company";
 import SiteFloatingContact from "@/components/ui/SiteFloatingContact";
 import "./globals.css";
@@ -16,6 +16,12 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800"],
+});
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -62,7 +68,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it" className={`scroll-smooth ${plusJakarta.variable} ${inter.variable}`}>
+    <html lang="it" suppressHydrationWarning className={`scroll-smooth ${plusJakarta.variable} ${inter.variable} ${bricolage.variable}`}>
       <body className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-brand-cyan selection:text-white font-sans antialiased">
         {children}
         <SiteFloatingContact />

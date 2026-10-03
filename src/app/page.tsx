@@ -1,6 +1,8 @@
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
-import HeroSection from "@/components/sections/HeroSection";
+import Preloader from "@/components/ui/Preloader";
+import HeroSection, { type HeroNextDate } from "@/components/sections/HeroSection";
+import { editionDayMonth, modeLabel, normalizeMode, upcomingEditions } from "@/lib/courses/format";
 import TrendingCoursesSection from "@/components/sections/TrendingCoursesSection";
 import AboutSection from "@/components/sections/AboutSection";
 import ServicesSection from "@/components/sections/ServicesSection";
@@ -20,12 +22,27 @@ export default async function HomePage() {
     getSiteContent(),
   ]);
 
+  // Prossime date: la prima edizione in programma di ogni corso aperto alle iscrizioni.
+  const nextDates: HeroNextDate[] = courses
+    .filter((c) => c.is_open_for_enrollment)
+    .flatMap((course) => {
+      const edition = upcomingEditions(course.editions)[0];
+      if (!edition) return [];
+      const mode = normalizeMode(course.mode);
+      const place = mode === "online" ? "Online" : edition.location || modeLabel(course.mode);
+      return [{ id: edition.id, slug: course.slug, title: course.title, place, start: edition.start_date, ...editionDayMonth(edition) }];
+    })
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .slice(0, 3)
+    .map(({ start: _start, ...rest }) => rest);
+
   return (
     <div className="flex flex-col min-h-screen bg-white text-slate-900">
+      <Preloader imageSrc={content["home.hero.image"]} />
       <SiteHeader />
       <main className="flex-grow">
         {/* 1. Hero */}
-        <HeroSection content={pickContent(content, "home.hero.")} />
+        <HeroSection content={pickContent(content, "home.hero.")} nextDates={nextDates} />
 
         {/* 2. Corsi del momento */}
         <TrendingCoursesSection courses={courses} content={content} />
