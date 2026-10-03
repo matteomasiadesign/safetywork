@@ -68,7 +68,7 @@ export default function Footer({ courseLinks = [], contacts }: FooterProps) {
                 <span>Sicurezza & Conformità Integrata</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                Consulenza tecnica, adempimenti D.Lgs. 81/08 e formazione accreditata
+                Consulenza tecnica, adempimenti di legge e formazione accreditata
               </h3>
               <p className="mt-1 text-xs sm:text-sm text-slate-300 font-normal">
                 Sede operativa e aule didattiche a Porto Torres (SS). Servizi e perizie in tutta la Sardegna.

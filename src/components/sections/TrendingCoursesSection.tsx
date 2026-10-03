@@ -72,8 +72,7 @@ export default function TrendingCoursesSection({ courses, content }: TrendingCou
         )}
 
         <p className="mt-10 text-center text-xs sm:text-sm text-slate-600 font-medium text-balance">
-          Catalogo formativo accreditato <span className="whitespace-nowrap">D.Lgs. 81/08</span> · {courses.length}{" "}
-          percorsi con ricerca e filtri
+          {courses.length} percorsi formativi in catalogo, con ricerca e filtri
         </p>
       </div>
     </section>

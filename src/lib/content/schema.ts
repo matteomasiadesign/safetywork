@@ -14,7 +14,7 @@ import { COMPANY_CONFIG } from "@/config/company";
 export const CONTENT_DEFAULTS = {
   // ---------------------------------------------------------------- home: hero
   "home.hero.image": "https://images.unsplash.com/photo-1705579612477-20866d78deeb?auto=format&fit=crop&w=2070&q=80",
-  "home.hero.badge": "Conformità Integrata D.Lgs. 81/08 & Certificazioni di Legge",
+  "home.hero.badge": "Safety Works · Porto Torres (SS)",
   "home.hero.title": "Consulenza e Formazione per la [[Sicurezza nei Luoghi di Lavoro]]",
   "home.hero.subtitle":
     "Supportiamo aziende, associazioni e professionisti nella gestione completa degli adempimenti normativi. La nostra missione è promuovere una cultura della sicurezza a 360°, trasformando l'obbligo normativo in valore organizzativo.",
@@ -53,7 +53,7 @@ export const CONTENT_DEFAULTS = {
   "home.about.button": "Scopri di più",
 
   // ------------------------------------------------------------ home: servizi
-  "home.services.badge": "Soluzioni Tecniche • D.Lgs. 81/08",
+  "home.services.badge": "Soluzioni tecniche",
   "home.services.title": "Servizi di Sicurezza",
   "home.services.subtitle":
     "Interventi specialistici per azzerare i rischi sanzionatori e garantire continuità e sicurezza operativa ad ogni settore d'impresa.",
@@ -65,9 +65,9 @@ export const CONTENT_DEFAULTS = {
   "home.services.alert_button": "Intervento Ispettivo Urgente",
 
   // ------------------------------------------------------------ home: contatti e mappa
-  "home.contact.title": "Parla con il nostro team",
+  "home.contact.title": "Raccontaci cosa ti serve. Al resto pensiamo noi.",
   "home.contact.subtitle":
-    "I nostri tecnici e docenti sono a tua disposizione per chiarimenti normativi sul D.Lgs. 81/08, piani formativi aziendali o preventivi personalizzati.",
+    "Che tu debba formare il personale, mettere in ordine i documenti o capire da dove cominciare, un nostro consulente ti ascolta e ti indica la strada più semplice.",
   "home.map.badge": "Vieni a Trovarci",
   "home.map.title": "La Nostra Sede Operativa",
 
@@ -101,7 +101,7 @@ export const CONTENT_DEFAULTS = {
   "about.pillar1.subtitle": "Gestione Documentale & Incarichi",
   "about.pillar1.text":
     "Supportiamo le imprese nella gestione completa della sicurezza, dalla redazione del DVR (Documento di Valutazione dei Rischi) alla gestione documentale quotidiana e all'assunzione diretta di incarichi come Responsabile del Servizio di Prevenzione e Protezione (RSPP).",
-  "about.pillar1.tag": "D.Lgs. 81/08",
+  "about.pillar1.tag": "DVR · RSPP",
   "about.pillar1.image": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80",
 
   "about.pillar2.code": "FORMAZIONE // TRAINING",
@@ -109,7 +109,7 @@ export const CONTENT_DEFAULTS = {
   "about.pillar2.subtitle": "Corsi per ogni figura aziendale",
   "about.pillar2.text":
     "Progettiamo ed eroghiamo corsi di formazione obbligatori e specifici per lavoratori, dirigenti, preposti, RSPP, addetti antincendio, addetti al primo soccorso e abilitazione per attrezzature di lavoro.",
-  "about.pillar2.tag": "D.Lgs 81/08",
+  "about.pillar2.tag": "Accordo Stato-Regioni",
   "about.pillar2.image": "https://images.unsplash.com/photo-1573164713988-8665fc963095?w=800&auto=format&fit=crop&q=80",
 
   "about.pillar3.code": "CANTIERI // OPERATIVITÀ",

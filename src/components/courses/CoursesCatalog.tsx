@@ -248,7 +248,7 @@ export default function CoursesCatalog({ courses }: { courses: Course[] }) {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#fdf2f2] border border-[#df0000]/20 text-[#df0000] text-xs font-bold uppercase tracking-wider mb-3 shadow-xs">
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>Formazione Accreditata D.Lgs. 81/08</span>
+                <span>Formazione accreditata</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                 Catalogo Corsi di Formazione

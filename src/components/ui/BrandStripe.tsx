@@ -30,7 +30,7 @@ export default function BrandStripe({
     >
       <div
         className={`${cyanWidth} bg-[#008e97] transition-all`}
-        title="Cyan Istituzionale (Conformità D.Lgs. 81/08)"
+        title="Cyan Istituzionale (Conformità normativa)"
       />
       <div
         className={`${orangeWidth} bg-[#f58220] transition-all`}

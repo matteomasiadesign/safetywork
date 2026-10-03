@@ -168,7 +168,7 @@ export default function Preloader({ imageSrc }: { imageSrc?: string }) {
           <span className="max-w-[12rem] font-mono text-[10px] uppercase leading-relaxed tracking-[0.2em] text-slate-400 sm:max-w-none sm:text-[11px]">
             Sicurezza sul lavoro
             <br />
-            D.Lgs. 81/08
+            Porto Torres (SS)
           </span>
           <span className="font-display text-5xl font-bold leading-none tabular-nums sm:text-6xl">
             <span ref={counterRef}>000</span>

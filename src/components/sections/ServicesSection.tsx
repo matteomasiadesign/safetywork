@@ -161,7 +161,6 @@ export default function ServicesSection({ services, content }: { services: Servi
                       <span>Richiedi offerta dedicata</span>
                       <ArrowRight className="w-3.5 h-3.5 transform group-hover/link:translate-x-1 transition-transform shrink-0" />
                     </Link>
-                    <span className="text-[11px] font-mono text-slate-400 font-semibold whitespace-nowrap">D.Lgs. 81/08</span>
                   </div>
                 </div>
               </div>
