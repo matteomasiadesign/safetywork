@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useData } from "@/context/DataContext";
 import { COMPANY_CONFIG } from "@/config/company";
 import BrandStripe from "@/components/ui/BrandStripe";
 import {
@@ -18,7 +17,6 @@ import {
 } from "lucide-react";
 
 export default function ContactSection() {
-  const { addInquiry } = useData();
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [stepError, setStepError] = useState<string>("");
 
@@ -30,6 +28,7 @@ export default function ContactSection() {
     service_type: "",
     message: "",
     privacyAccepted: false,
+    website: "", // campo trappola anti-bot: deve restare vuoto
   });
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -73,58 +72,52 @@ export default function ContactSection() {
     setFeedbackMessage("");
 
     try {
-      let isSuccess = false;
-      let msg = "Richiesta inviata con successo! Un nostro tecnico ti ricontatterà al più presto.";
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "contatto",
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
+          serviceType: formData.service_type,
+          message: formData.message,
+          privacyAccepted: formData.privacyAccepted,
+          website: formData.website,
+        }),
+      });
 
-      try {
-        const res = await fetch("/api/contact", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          msg = data.message || msg;
-          isSuccess = true;
-        } else {
-          isSuccess = true;
-        }
-      } catch {
-        isSuccess = true;
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setStatus("error");
+        setFeedbackMessage(
+          data.error || "Non è stato possibile inviare la richiesta. Riprova tra poco o chiamaci direttamente."
+        );
+        return;
       }
 
-      if (isSuccess) {
-        try {
-          addInquiry({
-            type: "contatto",
-            name: formData.name,
-            email: formData.email,
-            company: formData.company,
-            phone: formData.phone,
-            service_type: formData.service_type || "Richiesta generale",
-            message: formData.message,
-            status: "nuovo",
-          });
-        } catch (err) {
-          console.error("Error saving contact inquiry:", err);
-        }
-
-        setStatus("success");
-        setFeedbackMessage(msg);
-        setFormData({
-          name: "",
-          email: "",
-          company: "",
-          phone: "",
-          service_type: "",
-          message: "",
-          privacyAccepted: false,
-        });
-        setCurrentStep(1);
-      }
+      setStatus("success");
+      setFeedbackMessage(
+        data.message || "Richiesta inviata con successo! Un nostro tecnico ti ricontatterà al più presto."
+      );
+      setFormData({
+        name: "",
+        email: "",
+        company: "",
+        phone: "",
+        service_type: "",
+        message: "",
+        privacyAccepted: false,
+        website: "",
+      });
+      setCurrentStep(1);
     } catch {
       setStatus("error");
-      setFeedbackMessage("Si è verificato un errore durante l'invio. Riprova più tardi.");
+      setFeedbackMessage(
+        "Connessione non riuscita: la richiesta NON è stata inviata. Riprova o chiamaci direttamente."
+      );
     }
   };
 
@@ -274,6 +267,21 @@ export default function ContactSection() {
               )}
 
               <form onSubmit={handleSubmit}>
+                {/* Campo trappola anti-bot (invisibile per le persone) */}
+                <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                  <label>
+                    Non compilare questo campo
+                    <input
+                      type="text"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={formData.website}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    />
+                  </label>
+                </div>
+
                 {/* STEP 1: Dati Anagrafici e Contatti */}
                 {currentStep === 1 && (
                   <div className="space-y-4">

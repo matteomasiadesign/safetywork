@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Course } from "@/lib/types/database";
-import { useData } from "@/context/DataContext";
 import {
   Send,
   CheckCircle2,
@@ -24,11 +23,12 @@ interface CourseBookingFormProps {
 }
 
 export default function CourseBookingForm({ course }: CourseBookingFormProps) {
-  const { addInquiry } = useData();
-
   const [clientType, setClientType] = useState<"privato" | "azienda">("privato");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [website, setWebsite] = useState(""); // campo trappola anti-bot, deve restare vuoto
 
   const [formData, setFormData] = useState({
     // Privato
@@ -65,6 +65,8 @@ export default function CourseBookingForm({ course }: CourseBookingFormProps) {
 
   const handleResetForm = () => {
     setIsSubmitted(false);
+    setSubmitError("");
+    setPrivacyAccepted(false);
     setFormData({
       firstName: "",
       lastName: "",
@@ -89,69 +91,41 @@ export default function CourseBookingForm({ course }: CourseBookingFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError("");
+
+    if (!privacyAccepted) {
+      setSubmitError("Per inviare la richiesta devi accettare l'informativa sulla privacy.");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    const displayName =
-      clientType === "privato"
-        ? `${formData.firstName.trim()} ${formData.lastName.trim()}`
-        : formData.companyName.trim();
-
     try {
-      // Salva tramite DataContext (localStorage + Supabase)
-      await addInquiry({
-        type: "corso",
-        clientType,
-        name: displayName,
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        company: clientType === "azienda" ? formData.companyName.trim() : undefined,
-        courseTitle: course.title,
-        courseSlug: course.slug,
-        participantsCount: clientType === "azienda" ? Number(formData.participantsCount) || 1 : 1,
-        preferredMode: formData.preferredMode,
-        message: formData.notes.trim() || `Prenotazione per il corso ${course.title}`,
-        status: "nuovo",
-
-        firstName: formData.firstName.trim() || undefined,
-        lastName: formData.lastName.trim() || undefined,
-        fiscalCode: formData.fiscalCode.trim().toUpperCase() || undefined,
-        birthDate: formData.birthDate || undefined,
-        birthPlace: formData.birthPlace.trim() || undefined,
-
-        companyName: formData.companyName.trim() || undefined,
-        vatNumber: formData.vatNumber.trim().toUpperCase() || undefined,
-        atecoCode: formData.atecoCode.trim() || undefined,
-        sdiCode: formData.sdiCode.trim().toUpperCase() || undefined,
-        pec: formData.pec.trim() || undefined,
-
-        address: formData.address.trim() || undefined,
-        city: formData.city.trim() || undefined,
-        postalCode: formData.postalCode.trim() || undefined,
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "corso",
+          courseSlug: course.slug,
+          clientType,
+          ...formData,
+          privacyAccepted,
+          website,
+        }),
       });
 
-      // Notifica server API (Route Handler)
-      try {
-        await fetch("/api/contact", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...formData,
-            type: "corso",
-            client_type: clientType,
-            name: displayName,
-            course_title: course.title,
-            course_slug: course.slug,
-            message: formData.notes || `Iscrizione al corso ${course.title}`,
-          }),
-        });
-      } catch {
-        // Fallback locale trasparente
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setSubmitError(
+          data.error || "Non è stato possibile inviare la richiesta. Riprova tra poco o chiamaci direttamente."
+        );
+        return;
       }
 
       setIsSubmitted(true);
-    } catch (err) {
-      console.error("Errore salvataggio prenotazione:", err);
-      alert("Si è verificato un errore durante l'invio. Riprova o contattaci telefonicamente.");
+    } catch {
+      setSubmitError("Connessione non riuscita: la richiesta NON è stata inviata. Riprova o chiamaci direttamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -245,6 +219,21 @@ export default function CourseBookingForm({ course }: CourseBookingFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Campo trappola anti-bot (invisibile per le persone) */}
+        <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+          <label>
+            Non compilare questo campo
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
+          </label>
+        </div>
+
         {/* SEZIONE PRIVATO */}
         {clientType === "privato" && (
           <div className="space-y-4">
@@ -492,11 +481,37 @@ export default function CourseBookingForm({ course }: CourseBookingFormProps) {
           </div>
         </div>
 
+        {/* Consenso privacy */}
+        <div className="pt-4 border-t border-slate-100 space-y-3">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              required
+              checked={privacyAccepted}
+              onChange={(e) => setPrivacyAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#008e97] focus:ring-[#008e97]"
+            />
+            <span className="text-xs text-slate-600 leading-relaxed">
+              Accetto l'informativa sulla privacy ai sensi del Regolamento UE 2016/679 (GDPR) e autorizzo il
+              trattamento dei dati forniti per gestire la richiesta di iscrizione. *
+            </span>
+          </label>
+
+          {submitError && (
+            <div
+              role="alert"
+              className="p-3 rounded-xl bg-[#fdf2f2] border border-[#df0000]/30 text-[#df0000] text-xs font-medium"
+            >
+              {submitError}
+            </div>
+          )}
+        </div>
+
         {/* Submit & Legal */}
-        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <ShieldCheck className="w-4 h-4 text-[#008e97] shrink-0" />
-            <span>Trattamento conforme GDPR • Nessun pagamento anticipato richiesto</span>
+            <span>Nessun pagamento anticipato richiesto</span>
           </div>
 
           <button

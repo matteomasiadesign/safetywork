@@ -1,26 +1,19 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { Database } from "@/lib/types/database";
+import type { Database } from "@/lib/types/supabase";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
-export const isSupabaseConfigured = Boolean(
-  supabaseUrl &&
-  supabaseAnonKey &&
-  !supabaseUrl.includes("your-project") &&
-  !supabaseAnonKey.includes("placeholder") &&
-  !supabaseAnonKey.includes("your-anon-key")
-);
-
+/**
+ * Client Supabase per il browser (area admin, upload immagini).
+ * Se le variabili d'ambiente mancano il sito deve segnalarlo, non ripiegare su dati locali.
+ */
 export function createClient() {
-  if (!isSupabaseConfigured) {
-    // Return a dummy client or standard client to prevent runtime exceptions
-    return createBrowserClient(
-      supabaseUrl || "https://placeholder-domain.supabase.co",
-      supabaseAnonKey || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy"
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    throw new Error(
+      "Configurazione Supabase mancante: imposta NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY."
     );
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient<Database>(url, anonKey);
 }
-

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import Link from "@/components/ui/Link";
 import { Inquiry } from "@/lib/types/database";
+import { COMPANY_CONFIG } from "@/config/company";
 import {
   Inbox,
   Search,
@@ -163,7 +164,7 @@ export default function InquiriesManager({
       `Cordiali saluti,\n` +
       `Ufficio Formazione & Consulenza HSE\n` +
       `Safety Work S.r.l.s.\n` +
-      `Tel: 079 501234 | info@safetyworks.it`;
+      `Tel: ${COMPANY_CONFIG.contacts.phone} | ${COMPANY_CONFIG.contacts.email}`;
 
     return `mailto:${inquiry.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
@@ -185,7 +186,7 @@ export default function InquiriesManager({
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300 select-none">
+    <div className="space-y-4 animate-in fade-in duration-300">
       {/* 1. BARRA STRUMENTI & FILTRI COMPATTA */}
       <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         {/* Sinistra: Filtri per stato con conteggi live */}

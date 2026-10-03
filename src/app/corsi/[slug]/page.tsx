@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import SiteHeader from "@/components/layout/SiteHeader";
+import SiteFooter from "@/components/layout/SiteFooter";
 import Link from "@/components/ui/Link";
 import CourseBookingForm from "@/components/courses/CourseBookingForm";
-import { getCourseBySlug, getCourses } from "@/lib/supabase/server";
+import { getPublishedCourseBySlug, getPublishedCourses } from "@/lib/data/catalog";
 import {
   Clock,
   BookOpen,
@@ -16,6 +16,7 @@ import {
   PhoneCall,
   MapPin,
   Users,
+  Lock,
 } from "lucide-react";
 import { COMPANY_CONFIG } from "@/config/company";
 
@@ -28,7 +29,7 @@ interface PageProps {
 export const revalidate = 60; // ISR ogni 60 secondi
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const course = await getCourseBySlug(params.slug);
+  const course = await getPublishedCourseBySlug(params.slug);
   if (!course) {
     return {
       title: "Corso non trovato | Safety Work S.r.l.s.",
@@ -47,14 +48,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export async function generateStaticParams() {
-  const { courses } = await getCourses();
+  const courses = await getPublishedCourses();
   return courses.map((course) => ({
     slug: course.slug,
   }));
 }
 
 export default async function CourseDetailPage({ params }: PageProps) {
-  const course = await getCourseBySlug(params.slug);
+  // Se Supabase non risponde l'errore sale a app/error.tsx; solo uno slug inesistente dà 404.
+  const course = await getPublishedCourseBySlug(params.slug);
 
   if (!course) {
     notFound();
@@ -62,7 +64,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans">
-      <Navbar />
+      <SiteHeader />
 
       <main className="flex-grow pb-24">
         {/* Top Breadcrumbs & Back link */}
@@ -77,7 +79,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
             </Link>
 
             <span className="text-[11px] font-mono text-slate-400 uppercase">
-              {course.category}
+              {course.category.name}
             </span>
           </div>
         </div>
@@ -122,7 +124,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15">
                   <Award className="w-4 h-4 text-[#df0000]" />
-                  <span>Validità: {course.validity_years} Anni</span>
+                  <span>{course.validity_years ? `Validità: ${course.validity_years} Anni` : "Validità: secondo normativa"}</span>
                 </div>
 
                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15">
@@ -203,14 +205,34 @@ export default async function CourseDetailPage({ params }: PageProps) {
             {/* Right Column: Interactive Booking Form */}
             <div className="lg:col-span-5">
               <div className="sticky top-[88px]">
-                <CourseBookingForm course={course} />
+                {course.is_open_for_enrollment ? (
+                  <CourseBookingForm course={course} />
+                ) : (
+                  <div className="bg-white border border-slate-200 rounded-3xl shadow-lg p-8 text-center space-y-4">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+                      <Lock className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Iscrizioni chiuse</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      Per questo corso non sono aperte nuove iscrizioni. Contatta la segreteria per conoscere le
+                      prossime edizioni o per organizzare una sessione dedicata alla tua azienda.
+                    </p>
+                    <a
+                      href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
+                      className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold uppercase tracking-wider transition-colors"
+                    >
+                      <PhoneCall className="w-4 h-4" />
+                      <span>{COMPANY_CONFIG.contacts.phone}</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </main>
 
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

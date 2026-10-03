@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "@/components/ui/Link";
-import { Clock, Calendar, MapPin, ArrowRight } from "lucide-react";
+import { Clock, Lock, MapPin, ArrowRight } from "lucide-react";
 import { Course } from "@/lib/types/database";
 
 interface CourseCardProps {
@@ -39,7 +39,7 @@ export default function CourseCard({ course }: CourseCardProps) {
           {/* Unico gruppo ordinato di pills (impossibile che si sovrappongano) */}
           <div className="flex flex-wrap items-center gap-1.5 mb-3">
             <span className="inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#008e97] text-white rounded-lg shadow-xs shrink-0 whitespace-nowrap">
-              {course.category}
+              {course.category.name}
             </span>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
               <MapPin className="w-3 h-3 text-slate-300 shrink-0" />
@@ -49,10 +49,12 @@ export default function CourseCard({ course }: CourseCardProps) {
               <Clock className="w-3 h-3 text-[#008e97] shrink-0" />
               <span>{course.duration_hours} Ore</span>
             </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
-              <Calendar className="w-3 h-3 text-[#f58220] shrink-0" />
-              <span>{course.period || "Prossimamente"}</span>
-            </div>
+            {!course.is_open_for_enrollment && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/80 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shrink-0 whitespace-nowrap">
+                <Lock className="w-3 h-3 text-[#f58220] shrink-0" />
+                <span>Iscrizioni chiuse</span>
+              </div>
+            )}
           </div>
 
           <h3 className="text-xl font-bold text-white leading-snug tracking-tight drop-shadow-md line-clamp-3">
@@ -69,7 +71,7 @@ export default function CourseCard({ course }: CourseCardProps) {
               </p>
               
               <div className="inline-flex items-center justify-between w-full px-4 py-3 bg-[#df0000] hover:bg-[#df0000]/90 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-lg">
-                <span>Iscriviti al corso</span>
+                <span>{course.is_open_for_enrollment ? "Iscriviti al corso" : "Scopri il corso"}</span>
                 <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
                   <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform" />
                 </div>

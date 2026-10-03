@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import Link from "@/components/ui/Link";
-import { Course } from "@/lib/types/database";
+import type { Category, Course } from "@/lib/types/database";
+import type { CourseFlags, CourseInput } from "@/context/AdminDataContext";
+import { slugify } from "@/lib/utils/slug";
+import { compressImage, formatBytes } from "@/lib/images/compress";
 import {
   BookOpen,
   Plus,
@@ -67,28 +70,57 @@ export const COURSE_IMAGE_PRESETS = [
 
 interface CoursesManagerProps {
   courses: Course[];
-  categories: string[];
-  onAddCourse: (course: Omit<Course, "id" | "created_at" | "updated_at">) => void;
-  onUpdateCourse: (id: string, updates: Partial<Course>) => void;
-  onDeleteCourse: (id: string) => void;
-  onDuplicateCourse: (id: string) => void;
-  onAddCategory: (category: string) => void;
+  categories: Category[];
+  onSaveCourse: (input: CourseInput, id?: string, imageFile?: File | null) => Promise<unknown>;
+  onToggleCourse: (id: string, flags: CourseFlags) => Promise<void>;
+  onDeleteCourse: (id: string) => Promise<void>;
+  onDuplicateCourse: (id: string) => Promise<unknown>;
+  onAddCategory: (name: string) => Promise<Category>;
   onNavigateToCategories: () => void;
-  showToast: (msg: string) => void;
-  externalOpenAddModalTrigger?: number;
+  showToast: (msg: string, tone?: "success" | "error") => void;
 }
+
+type CourseFormState = {
+  title: string;
+  slug: string;
+  category_id: string;
+  short_description: string;
+  content: string;
+  duration_hours: number;
+  mode: string;
+  validity_years: number;
+  normative_ref: string;
+  target_audience: string;
+  certification_issued: string;
+  location: string;
+  image_url: string;
+  is_featured: boolean;
+  is_open_for_enrollment: boolean;
+  is_published: boolean;
+};
+
+const DEFAULT_CONTENT = `### Obiettivi del Corso
+Fornire ai partecipanti il quadro completo degli obblighi di legge previsti dal D.Lgs. 81/08 e le competenze operative per prevenire gli infortuni e gestire le misure di sicurezza.
+
+### Articolazione dei Moduli Didattici
+1. **Modulo 1 - Normativo e Giuridico (2 ore)**: Responsabilità civili e penali, figure della prevenzione aziendale.
+2. **Modulo 2 - Valutazione dei Rischi Specifici (2 ore)**: Metodologie pratiche, ambienti di lavoro, movimentazione carichi.
+3. **Modulo 3 - Misure Tecniche ed Organizzative (2 ore)**: Dispositivi di protezione individuale (DPI) e procedure operative.
+4. **Modulo 4 - Gestione Emergenze e Primo Intervento (2 ore)**: Piani di evacuazione rapida e comunicazione di soccorso.
+
+### Verifica Finale dell'Apprendimento
+Test scritto a risposta multipla finale e colloquio di approfondimento con il docente qualificato.`;
 
 export default function CoursesManager({
   courses,
   categories,
-  onAddCourse,
-  onUpdateCourse,
+  onSaveCourse,
+  onToggleCourse,
   onDeleteCourse,
   onDuplicateCourse,
   onAddCategory,
   onNavigateToCategories,
   showToast,
-  externalOpenAddModalTrigger,
 }: CoursesManagerProps) {
   // View mode: 'grid' or 'table'
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
@@ -96,7 +128,7 @@ export default function CoursesManager({
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tutti");
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "featured" | "in_person">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "featured" | "in_person" | "draft">("all");
 
   // Modal & Wizard state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,68 +140,82 @@ export default function CoursesManager({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form State for Course Add / Edit
-  const [courseForm, setCourseForm] = useState<{
-    title: string;
-    slug: string;
-    category: string;
-    short_description: string;
-    content: string;
-    duration_hours: number;
-    mode: string;
-    validity_years: number;
-    normative_ref: string;
-    target_audience: string;
-    certification_issued: string;
-    is_featured: boolean;
-    is_open_for_enrollment: boolean;
-    seats_available: number;
-    image_url: string;
-    period: string;
-    location: string;
-  }>({
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Foto scelta dal computer: compressa subito, caricata su Storage solo al salvataggio
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [imageInfo, setImageInfo] = useState("");
+
+  const resetImageState = () => {
+    setCourseForm((prev) => {
+      if (prev.image_url.startsWith("blob:")) URL.revokeObjectURL(prev.image_url);
+      return prev;
+    });
+    setPendingImage(null);
+    setImageInfo("");
+  };
+
+  // Imposta un'immagine da URL o da libreria, scartando l'eventuale foto in attesa
+  const setImageUrl = (url: string) => {
+    resetImageState();
+    setCourseForm((prev) => ({ ...prev, image_url: url }));
+  };
+
+  const emptyCourseForm = (): CourseFormState => ({
     title: "",
     slug: "",
-    category: categories[0] || "Datori di Lavoro & Dirigenti",
+    category_id: categories[0]?.id ?? "",
     short_description: "",
-    content: "",
+    content: DEFAULT_CONTENT,
     duration_hours: 8,
     mode: "Aula in presenza",
     validity_years: 5,
     normative_ref: "Art. 37 D.Lgs. 81/08 - Accordo Stato-Regioni",
     target_audience: "Lavoratori, Preposti e Datori di Lavoro",
-    certification_issued: "Attestato ufficiale valido su tutto il territorio nazionale con verifica dell'apprendimento",
+    certification_issued: "Attestato ufficiale abilitativo valido su tutto il territorio nazionale con verifica finale",
+    location: "Porto Torres (SS)",
+    image_url: COURSE_IMAGE_PRESETS[0].url,
     is_featured: false,
     is_open_for_enrollment: true,
-    seats_available: 6,
-    image_url: COURSE_IMAGE_PRESETS[0].url,
-    period: "Prossima sessione: In partenza a breve",
-    location: "Porto Torres (SS)",
+    is_published: true,
   });
+
+  // Form State for Course Add / Edit
+  const [courseForm, setCourseForm] = useState<CourseFormState>(emptyCourseForm);
+
+  // Esegue un'azione su Supabase e mostra l'esito (anche gli errori)
+  const runAction = async (action: () => Promise<unknown>, okMessage?: string) => {
+    try {
+      await action();
+      if (okMessage) showToast(okMessage);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Operazione non riuscita.", "error");
+    }
+  };
 
   // KPI Statistics
   const stats = useMemo(() => {
-    const total = courses.length;
     const openEnrollment = courses.filter((c) => c.is_open_for_enrollment).length;
     const featured = courses.filter((c) => c.is_featured).length;
-    const totalSeats = courses.reduce((acc, curr) => acc + (curr.seats_available || 0), 0);
+    const drafts = courses.filter((c) => !c.is_published).length;
     const inPerson = courses.filter((c) => {
       const m = (c.mode || "").toLowerCase();
       return m.includes("aula") || m.includes("presenza") || m.includes("pratiche") || m.includes("misto");
     }).length;
-    return { total, openEnrollment, featured, totalSeats, inPerson };
+    return { openEnrollment, featured, drafts, inPerson };
   }, [courses]);
 
   // Filtered Courses
   const filteredCourses = useMemo(() => {
     return courses.filter((c) => {
       // Category match
-      if (selectedCategory !== "Tutti" && c.category !== selectedCategory) {
+      if (selectedCategory !== "Tutti" && c.category_id !== selectedCategory) {
         return false;
       }
 
       // Status pill match
       if (statusFilter === "open" && !c.is_open_for_enrollment) return false;
+      if (statusFilter === "draft" && c.is_published) return false;
       if (statusFilter === "featured" && !c.is_featured) return false;
       if (statusFilter === "in_person") {
         const m = (c.mode || "").toLowerCase();
@@ -185,7 +231,7 @@ export default function CoursesManager({
         const matchNorm = c.normative_ref.toLowerCase().includes(q);
         const matchLoc = c.location ? c.location.toLowerCase().includes(q) : false;
         const matchDesc = c.short_description.toLowerCase().includes(q);
-        const matchCat = c.category.toLowerCase().includes(q);
+        const matchCat = c.category.name.toLowerCase().includes(q);
         return matchTitle || matchSlug || matchNorm || matchLoc || matchDesc || matchCat;
       }
 
@@ -195,48 +241,18 @@ export default function CoursesManager({
 
   // Open Add Course Modal
   const handleOpenAddModal = () => {
+    if (categories.length === 0) {
+      showToast("Crea prima almeno una categoria.", "error");
+      onNavigateToCategories();
+      return;
+    }
     setEditingCourse(null);
     setCurrentStep(1);
     setIsQuickAddCatOpen(false);
     setQuickNewCat("");
-    setCourseForm({
-      title: "",
-      slug: "",
-      category: categories[0] || "Datori di Lavoro & Dirigenti",
-      short_description: "",
-      content: `### Obiettivi del Corso
-Fornire ai partecipanti il quadro completo degli obblighi di legge previsti dal D.Lgs. 81/08 e le competenze operative per prevenire gli infortuni e gestire le misure di sicurezza.
-
-### Articolazione dei Moduli Didattici
-1. **Modulo 1 - Normativo e Giuridico (2 ore)**: Responsabilità civili e penali, figure della prevenzione aziendale.
-2. **Modulo 2 - Valutazione dei Rischi Specifici (2 ore)**: Metodologie pratiche, ambienti di lavoro, movimentazione carichi.
-3. **Modulo 3 - Misure Tecniche ed Organizzative (2 ore)**: Dispositivi di protezione individuale (DPI) e procedure operative.
-4. **Modulo 4 - Gestione Emergenze e Primo Intervento (2 ore)**: Piani di evacuazione rapida e comunicazione di soccorso.
-
-### Verifica Finale dell'Apprendimento
-Test scritto a risposta multipla finale e colloquio di approfondimento con il docente qualificato.`,
-      duration_hours: 8,
-      mode: "Aula in presenza",
-      validity_years: 5,
-      normative_ref: "Art. 37 D.Lgs. 81/08 - Accordo Stato-Regioni",
-      target_audience: "Lavoratori, Preposti e Datori di Lavoro",
-      certification_issued: "Attestato ufficiale abilitativo valido su tutto il territorio nazionale con verifica finale",
-      is_featured: false,
-      is_open_for_enrollment: true,
-      seats_available: 6,
-      image_url: COURSE_IMAGE_PRESETS[0].url,
-      period: "Prossima sessione: In partenza a breve",
-      location: "Porto Torres (SS)",
-    });
+    setCourseForm(emptyCourseForm());
     setIsModalOpen(true);
   };
-
-  // React to external open add modal trigger
-  useEffect(() => {
-    if (externalOpenAddModalTrigger && externalOpenAddModalTrigger > 0) {
-      handleOpenAddModal();
-    }
-  }, [externalOpenAddModalTrigger]);
 
   // Open Edit Course Modal
   const handleOpenEditModal = (course: Course) => {
@@ -247,79 +263,94 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
     setCourseForm({
       title: course.title,
       slug: course.slug,
-      category: course.category,
+      category_id: course.category_id,
       short_description: course.short_description,
       content: course.content,
       duration_hours: course.duration_hours,
       mode: course.mode,
-      validity_years: course.validity_years,
+      validity_years: course.validity_years ?? 0,
       normative_ref: course.normative_ref,
       target_audience: course.target_audience || "",
       certification_issued: course.certification_issued || "",
-      is_featured: course.is_featured,
-      is_open_for_enrollment: course.is_open_for_enrollment ?? true,
-      seats_available: course.seats_available ?? 6,
-      image_url: course.image_url || COURSE_IMAGE_PRESETS[0].url,
-      period: course.period || "",
       location: course.location || "",
+      image_url: course.image_url || COURSE_IMAGE_PRESETS[0].url,
+      is_featured: course.is_featured,
+      is_open_for_enrollment: course.is_open_for_enrollment,
+      is_published: course.is_published,
     });
     setIsModalOpen(true);
   };
 
   // Quick Add Category from Wizard
-  const handleQuickAddCategory = () => {
-    if (!quickNewCat.trim()) return;
-    onAddCategory(quickNewCat.trim());
-    setCourseForm((prev) => ({ ...prev, category: quickNewCat.trim() }));
-    setQuickNewCat("");
-    setIsQuickAddCatOpen(false);
-    showToast(`Categoria "${quickNewCat.trim()}" creata!`);
-  };
-
-  // Image Upload handler
-  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("L'immagine selezionata supera 2MB. Scegli un file più leggero o usa un URL.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCourseForm((prev) => ({ ...prev, image_url: reader.result as string }));
-        showToast("Immagine caricata con successo!");
-      };
-      reader.readAsDataURL(file);
+  const handleQuickAddCategory = async () => {
+    const name = quickNewCat.trim();
+    if (!name) return;
+    try {
+      const created = await onAddCategory(name);
+      setCourseForm((prev) => ({ ...prev, category_id: created.id }));
+      setQuickNewCat("");
+      setIsQuickAddCatOpen(false);
+      showToast(`Categoria "${name}" creata.`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Categoria non creata.", "error");
     }
   };
+
+  // Foto dal computer: viene compressa sotto i 150 kB subito, ma caricata solo al salvataggio
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setIsSaving(true);
+    try {
+      const result = await compressImage(file);
+      resetImageState();
+      setPendingImage(result.file);
+      setCourseForm((prev) => ({ ...prev, image_url: URL.createObjectURL(result.file) }));
+      setImageInfo(
+        `Ottimizzata: ${formatBytes(result.originalBytes)} → ${formatBytes(result.file.size)} (${result.width}×${result.height} px)`
+      );
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Immagine non valida.", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Chiusura del modale: libera l'anteprima della foto non salvata
+  useEffect(() => {
+    if (!isModalOpen) resetImageState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen]);
 
   // Check step validity before moving next
   const validateStep = (step: number): boolean => {
     if (step === 1) {
       if (!courseForm.title.trim()) {
-        alert("Inserisci il titolo ufficiale del corso per procedere.");
+        showToast("Inserisci il titolo ufficiale del corso per procedere.", "error");
         return false;
       }
-      if (!courseForm.category.trim()) {
-        alert("Seleziona una categoria didattica.");
+      if (!courseForm.category_id) {
+        showToast("Seleziona una categoria didattica.", "error");
         return false;
       }
       if (!courseForm.normative_ref.trim()) {
-        alert("Inserisci il riferimento normativo di legge (es. D.Lgs. 81/08).");
+        showToast("Inserisci il riferimento normativo di legge (es. D.Lgs. 81/08).", "error");
         return false;
       }
     } else if (step === 2) {
       if (!courseForm.duration_hours || courseForm.duration_hours < 1) {
-        alert("La durata in ore deve essere di almeno 1 ora.");
+        showToast("La durata in ore deve essere di almeno 1 ora.", "error");
         return false;
       }
     } else if (step === 3) {
       if (!courseForm.short_description.trim()) {
-        alert("Inserisci una breve descrizione sintetica del corso.");
+        showToast("Inserisci una breve descrizione sintetica del corso.", "error");
         return false;
       }
       if (!courseForm.content.trim()) {
-        alert("Inserisci il programma didattico dettagliato del corso.");
+        showToast("Inserisci il programma didattico dettagliato del corso.", "error");
         return false;
       }
     }
@@ -337,52 +368,63 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
   };
 
   // Final Form Submission
-  const handleSubmitForm = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!courseForm.title.trim()) {
       setCurrentStep(1);
-      alert("Il titolo del corso è obbligatorio.");
+      showToast("Il titolo del corso è obbligatorio.", "error");
+      return;
+    }
+    if (!courseForm.category_id) {
+      setCurrentStep(1);
+      showToast("Seleziona una categoria didattica.", "error");
       return;
     }
 
-    const autoSlug =
-      courseForm.slug.trim() ||
-      courseForm.title
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, "")
-        .trim()
-        .replace(/\s+/g, "-");
+    const slug = slugify(courseForm.slug.trim() || courseForm.title);
+    if (!slug) {
+      setCurrentStep(1);
+      showToast("Lo slug non è valido: usa lettere e numeri.", "error");
+      return;
+    }
 
-    const payload = {
+    const input: CourseInput = {
       title: courseForm.title.trim(),
-      slug: autoSlug,
-      category: courseForm.category,
+      slug,
+      category_id: courseForm.category_id,
       short_description: courseForm.short_description.trim(),
       content: courseForm.content.trim(),
       duration_hours: Number(courseForm.duration_hours) || 8,
       mode: courseForm.mode,
-      validity_years: Number(courseForm.validity_years) || 5,
+      validity_years: Number(courseForm.validity_years) > 0 ? Number(courseForm.validity_years) : null,
       normative_ref: courseForm.normative_ref.trim(),
-      target_audience: courseForm.target_audience.trim() || undefined,
-      certification_issued: courseForm.certification_issued.trim() || undefined,
+      target_audience: courseForm.target_audience.trim() || null,
+      certification_issued: courseForm.certification_issued.trim() || null,
+      location: courseForm.location.trim() || null,
+      // con una foto in attesa il vero URL lo assegna il salvataggio dopo il caricamento
+      image_url: pendingImage ? editingCourse?.image_url ?? null : courseForm.image_url || null,
       is_featured: courseForm.is_featured,
       is_open_for_enrollment: courseForm.is_open_for_enrollment,
-      seats_available: Number(courseForm.seats_available) || 0,
-      image_url: courseForm.image_url || COURSE_IMAGE_PRESETS[0].url,
-      period: courseForm.period.trim() || undefined,
-      location: courseForm.location.trim() || undefined,
+      is_published: courseForm.is_published,
     };
 
-    if (editingCourse) {
-      onUpdateCourse(editingCourse.id, payload);
-      showToast(`Corso "${payload.title}" aggiornato con successo!`);
-    } else {
-      onAddCourse(payload);
-      showToast(`Nuovo corso "${payload.title}" pubblicato nel catalogo!`);
+    setIsSaving(true);
+    try {
+      await onSaveCourse(input, editingCourse?.id, pendingImage);
+      showToast(
+        editingCourse
+          ? `Corso "${input.title}" aggiornato.`
+          : input.is_published
+          ? `Corso "${input.title}" pubblicato.`
+          : `Corso "${input.title}" salvato come bozza.`
+      );
+      setIsModalOpen(false);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Salvataggio non riuscito.", "error");
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsModalOpen(false);
   };
 
   // Helper to check if current mode is in presence
@@ -535,6 +577,24 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
             </span>
           </button>
 
+          <button
+            onClick={() => setStatusFilter("draft")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+              statusFilter === "draft"
+                ? "bg-slate-700 text-white shadow-xs"
+                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60"
+            }`}
+          >
+            <span>Bozze</span>
+            <span
+              className={`text-[11px] px-1.5 py-0.2 rounded-md font-semibold ${
+                statusFilter === "draft" ? "bg-white/20 text-white" : "bg-slate-200/70 text-slate-600"
+              }`}
+            >
+              {stats.drafts}
+            </span>
+          </button>
+
           {(searchQuery || selectedCategory !== "Tutti" || statusFilter !== "all") && (
             <button
               onClick={() => {
@@ -577,10 +637,10 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
           >
             <option value="Tutti">Tutte le Categorie ({courses.length})</option>
             {categories.map((cat) => {
-              const count = courses.filter((c) => c.category === cat).length;
+              const count = courses.filter((c) => c.category_id === cat.id).length;
               return (
-                <option key={cat} value={cat}>
-                  {cat} ({count})
+                <option key={cat.id} value={cat.id}>
+                  {cat.name} ({count})
                 </option>
               );
             })}
@@ -637,7 +697,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                 {/* Category Badge Top Left */}
                 <div className="absolute top-3 left-3">
                   <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold uppercase tracking-wider border border-white/10">
-                    {course.category}
+                    {course.category.name}
                   </span>
                 </div>
 
@@ -645,7 +705,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                 <div className="absolute top-3 right-3 flex items-center gap-1.5">
                   {/* Featured toggle */}
                   <button
-                    onClick={() => onUpdateCourse(course.id, { is_featured: !course.is_featured })}
+                    onClick={() => runAction(() => onToggleCourse(course.id, { is_featured: !course.is_featured }))}
                     className={`p-1.5 rounded-lg backdrop-blur-xs transition-all ${
                       course.is_featured
                         ? "bg-amber-500 text-white shadow-xs"
@@ -659,9 +719,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                   {/* Enrollment status pill */}
                   <button
                     onClick={() =>
-                      onUpdateCourse(course.id, {
-                        is_open_for_enrollment: !course.is_open_for_enrollment,
-                      })
+                      runAction(() => onToggleCourse(course.id, { is_open_for_enrollment: !course.is_open_for_enrollment }))
                     }
                     className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs transition-all ${
                       course.is_open_for_enrollment
@@ -688,7 +746,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                     </span>
                     <span className="inline-flex items-center gap-1 font-semibold text-[11px] bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-xs">
                       <Award className="w-3 h-3 text-amber-400" />
-                      <span>{course.validity_years} anni</span>
+                      <span>{course.validity_years ? `${course.validity_years} anni` : "validità di legge"}</span>
                     </span>
                   </div>
 
@@ -725,10 +783,17 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                 {/* Card Meta & Badges */}
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-bold uppercase text-slate-400 block">Posti</span>
-                      <span className="font-bold text-slate-900">{course.seats_available ?? 0} disponibili</span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => runAction(() => onToggleCourse(course.id, { is_published: !course.is_published }))}
+                      className="bg-slate-50 hover:bg-slate-100 p-2 rounded-xl border border-slate-100 text-left transition-colors"
+                      title="Clicca per pubblicare o mettere in bozza"
+                    >
+                      <span className="text-[10px] font-bold uppercase text-slate-400 block">Stato</span>
+                      <span className={`font-bold ${course.is_published ? "text-emerald-700" : "text-amber-700"}`}>
+                        {course.is_published ? "Pubblicato" : "Bozza"}
+                      </span>
+                    </button>
 
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
                       <span className="text-[10px] font-bold uppercase text-slate-400 block">Modalità</span>
@@ -736,12 +801,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                     </div>
                   </div>
 
-                  {course.period && (
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{course.period}</span>
-                    </div>
-                  )}
+                  
                 </div>
               </div>
 
@@ -758,7 +818,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
 
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => onDuplicateCourse(course.id)}
+                    onClick={() => runAction(() => onDuplicateCourse(course.id), "Corso duplicato come bozza.")}
                     className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                     title="Duplica come bozza"
                   >
@@ -800,7 +860,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                   <th className="py-3.5 px-3">Durata & Validità</th>
                   <th className="py-3.5 px-3 text-center">In Evidenza</th>
                   <th className="py-3.5 px-3 text-center">Iscrizioni</th>
-                  <th className="py-3.5 px-3 text-center">Posti</th>
+                  <th className="py-3.5 px-3 text-center">Pubblicato</th>
                   <th className="py-3.5 px-4 text-right">Azioni</th>
                 </tr>
               </thead>
@@ -828,7 +888,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                     {/* Category */}
                     <td className="py-3.5 px-3 text-slate-600 font-medium">
                       <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px]">
-                        {course.category}
+                        {course.category.name}
                       </span>
                     </td>
 
@@ -848,13 +908,13 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                     {/* Duration & Validity */}
                     <td className="py-3.5 px-3 text-slate-600">
                       <div className="font-semibold text-slate-900">{course.duration_hours} Ore</div>
-                      <div className="text-[10px] text-slate-500">Valido {course.validity_years} anni</div>
+                      <div className="text-[10px] text-slate-500">{course.validity_years ? `Valido ${course.validity_years} anni` : "Validità di legge"}</div>
                     </td>
 
                     {/* Featured toggle */}
                     <td className="py-3.5 px-3 text-center">
                       <button
-                        onClick={() => onUpdateCourse(course.id, { is_featured: !course.is_featured })}
+                        onClick={() => runAction(() => onToggleCourse(course.id, { is_featured: !course.is_featured }))}
                         className={`p-1.5 rounded-lg border transition-colors ${
                           course.is_featured
                             ? "bg-amber-50 text-amber-600 border-amber-200"
@@ -870,9 +930,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                     <td className="py-3.5 px-3 text-center">
                       <button
                         onClick={() =>
-                          onUpdateCourse(course.id, {
-                            is_open_for_enrollment: !course.is_open_for_enrollment,
-                          })
+                          runAction(() => onToggleCourse(course.id, { is_open_for_enrollment: !course.is_open_for_enrollment }))
                         }
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${
                           course.is_open_for_enrollment
@@ -889,11 +947,16 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                       </button>
                     </td>
 
-                    {/* Seats */}
+                    {/* Published */}
                     <td className="py-3.5 px-3 text-center">
-                      <span className="font-bold text-slate-800 font-mono text-xs">
-                        {course.seats_available ?? 0}
-                      </span>
+                      <button
+                        onClick={() => runAction(() => onToggleCourse(course.id, { is_published: !course.is_published }))}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                          course.is_published ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        <span>{course.is_published ? "Online" : "Bozza"}</span>
+                      </button>
                     </td>
 
                     {/* Actions */}
@@ -909,7 +972,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                         </Link>
 
                         <button
-                          onClick={() => onDuplicateCourse(course.id)}
+                          onClick={() => runAction(() => onDuplicateCourse(course.id), "Corso duplicato come bozza.")}
                           className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
                           title="Duplica come bozza"
                         >
@@ -1120,12 +1183,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                         <button
                           type="button"
                           onClick={() => {
-                            const auto = courseForm.title
-                              .toLowerCase()
-                              .replace(/[^\w\s-]/g, "")
-                              .trim()
-                              .replace(/\s+/g, "-");
-                            setCourseForm({ ...courseForm, slug: auto });
+                            setCourseForm({ ...courseForm, slug: slugify(courseForm.title) });
                           }}
                           className="text-[10px] text-[#008e97] hover:underline font-semibold"
                         >
@@ -1157,13 +1215,13 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                       </div>
 
                       <select
-                        value={courseForm.category}
-                        onChange={(e) => setCourseForm({ ...courseForm, category: e.target.value })}
+                        value={courseForm.category_id}
+                        onChange={(e) => setCourseForm({ ...courseForm, category_id: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
                       >
                         {categories.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
                           </option>
                         ))}
                       </select>
@@ -1225,11 +1283,11 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                   <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                     <Clock className="w-4 h-4 text-[#f58220]" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Step 2: Modalità di Erogazione, Durata, Sede e Posti
+                      Step 2: Modalità di Erogazione, Durata e Sede
                     </h4>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-800 mb-1">Durata (Ore) *</label>
                       <input
@@ -1251,18 +1309,6 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                         max={10}
                         value={courseForm.validity_years}
                         onChange={(e) => setCourseForm({ ...courseForm, validity_years: Number(e.target.value) })}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-800 mb-1">Posti Disponibili</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={200}
-                        value={courseForm.seats_available}
-                        onChange={(e) => setCourseForm({ ...courseForm, seats_available: Number(e.target.value) })}
                         className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
                       />
                     </div>
@@ -1325,20 +1371,7 @@ Test scritto a risposta multipla finale e colloquio di approfondimento con il do
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-800 mb-1">
-                        Periodo / Indicazione Prossima Sessione
-                      </label>
-                      <input
-                        type="text"
-                        value={courseForm.period}
-                        onChange={(e) => setCourseForm({ ...courseForm, period: e.target.value })}
-                        placeholder="es. Prossima sessione: 24 Ottobre 2026 oppure In partenza a breve"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
-                      />
-                    </div>
-
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-800 mb-1">
                         Attestato & Validità Rilasciata
@@ -1444,8 +1477,9 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                         </label>
                         <input
                           type="text"
-                          value={courseForm.image_url}
-                          onChange={(e) => setCourseForm({ ...courseForm, image_url: e.target.value })}
+                          value={pendingImage ? "(foto caricata dal computer)" : courseForm.image_url}
+                          readOnly={Boolean(pendingImage)}
+                          onChange={(e) => setImageUrl(e.target.value)}
                           placeholder="https://images.unsplash.com/..."
                           className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-900 mb-2"
                         />
@@ -1453,7 +1487,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                         <input
                           type="file"
                           ref={fileInputRef}
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/webp,image/avif"
                           onChange={handleImageFileUpload}
                           className="hidden"
                         />
@@ -1465,6 +1499,10 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                           <Upload className="w-3.5 h-3.5 text-[#008e97]" />
                           <span>Carica Foto dal Computer</span>
                         </button>
+                        <p className="mt-1.5 text-[11px] text-slate-500">
+                          {imageInfo ||
+                            "JPG, PNG, WebP o AVIF: viene ottimizzata automaticamente sotto i 150 kB, senza perdita visibile."}
+                        </p>
                       </div>
 
                       {/* Preset themes */}
@@ -1477,7 +1515,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                             <button
                               key={p.label}
                               type="button"
-                              onClick={() => setCourseForm({ ...courseForm, image_url: p.url })}
+                              onClick={() => setImageUrl(p.url)}
                               className={`text-[10px] p-2 rounded-xl text-left border transition-all truncate ${
                                 courseForm.image_url === p.url
                                   ? "bg-[#e6f6f7] border-[#008e97] text-[#008e97] font-bold"
@@ -1503,7 +1541,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                           />
                           <div className="absolute top-2.5 left-2.5">
                             <span className="px-2 py-0.5 rounded-md bg-slate-900/80 text-white text-[10px] font-bold uppercase">
-                              {courseForm.category}
+                              {categories.find((c) => c.id === courseForm.category_id)?.name ?? ""}
                             </span>
                           </div>
                         </div>
@@ -1536,7 +1574,25 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                       Impostazioni di Pubblicazione
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-300 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={courseForm.is_published}
+                          onChange={(e) => setCourseForm({ ...courseForm, is_published: e.target.checked })}
+                          className="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-0"
+                        />
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Pubblicato sul sito</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            Se disattivato il corso resta in bozza e il pubblico non lo vede
+                          </div>
+                        </div>
+                      </label>
+
                       <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-amber-300 transition-colors">
                         <input
                           type="checkbox"
@@ -1611,10 +1667,11 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                   ) : (
                     <button
                       type="submit"
-                      className="px-6 py-2.5 bg-[#df0000] hover:bg-[#b80000] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow-md transition-all flex items-center gap-2"
+                      disabled={isSaving}
+                      className="px-6 py-2.5 disabled:opacity-50 bg-[#df0000] hover:bg-[#b80000] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow-md transition-all flex items-center gap-2"
                     >
                       <Check className="w-4 h-4" />
-                      <span>{editingCourse ? "Salva Modifiche" : "Pubblica Corso"}</span>
+                      <span>{isSaving ? "Salvataggio..." : editingCourse ? "Salva Modifiche" : "Salva Corso"}</span>
                     </button>
                   )}
                 </div>
@@ -1658,9 +1715,9 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
               <button
                 type="button"
                 onClick={() => {
-                  onDeleteCourse(deleteConfirmCourse.id);
+                  const target = deleteConfirmCourse;
+                  runAction(() => onDeleteCourse(target.id), `Corso "${target.title}" eliminato.`);
                   setDeleteConfirmCourse(null);
-                  showToast(`Corso "${deleteConfirmCourse.title}" eliminato.`);
                 }}
                 className="px-5 py-2.5 bg-[#df0000] hover:bg-[#b80000] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-colors"
               >

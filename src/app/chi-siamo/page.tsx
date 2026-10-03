@@ -1,7 +1,7 @@
 import React from "react";
 import { Metadata } from "next";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import SiteHeader from "@/components/layout/SiteHeader";
+import SiteFooter from "@/components/layout/SiteFooter";
 import { Shield, FileText, Award, HardHat, Settings, CheckCircle2 } from "lucide-react";
 import { COMPANY_CONFIG } from "@/config/company";
 
@@ -57,7 +57,7 @@ const PILLARS = [
 export default function AboutPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white text-slate-900">
-      <Navbar />
+      <SiteHeader />
 
       <main className="flex-grow">
         {/* Page Hero */}
@@ -188,7 +188,7 @@ export default function AboutPage() {
         </section>
       </main>
 
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

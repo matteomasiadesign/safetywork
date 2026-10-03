@@ -1,21 +1,22 @@
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import SiteHeader from "@/components/layout/SiteHeader";
+import SiteFooter from "@/components/layout/SiteFooter";
 import HeroSection from "@/components/sections/HeroSection";
 import TrendingCoursesSection from "@/components/sections/TrendingCoursesSection";
 import AboutSection from "@/components/sections/AboutSection";
 import ServicesSection from "@/components/sections/ServicesSection";
 import ContactSection from "@/components/sections/ContactSection";
 import MapSection from "@/components/sections/MapSection";
-import { getCourses } from "@/lib/supabase/server";
+import { getPublishedCourses, getPublishedServices } from "@/lib/data/catalog";
 
-export const revalidate = 60; // ISR ogni 60 secondi
+export const revalidate = 60; // ISR ogni 60 secondi (e subito dopo ogni modifica dall'admin)
 
 export default async function HomePage() {
-  const { courses } = await getCourses();
+  // Se Supabase non risponde l'errore sale a app/error.tsx: nessun dato di ripiego.
+  const [courses, services] = await Promise.all([getPublishedCourses(), getPublishedServices()]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-slate-900">
-      <Navbar />
+      <SiteHeader />
       <main className="flex-grow">
         {/* 1. Hero */}
         <HeroSection />
@@ -27,7 +28,7 @@ export default async function HomePage() {
         <AboutSection />
 
         {/* 4. Servizi di sicurezza */}
-        <ServicesSection />
+        <ServicesSection services={services} />
 
         {/* 5. Contatti */}
         <ContactSection />
@@ -35,7 +36,7 @@ export default async function HomePage() {
         {/* 6. Mappa della sede operativa */}
         <MapSection />
       </main>
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

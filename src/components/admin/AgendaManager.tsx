@@ -34,20 +34,22 @@ import {
   Mail,
 } from "lucide-react";
 import { AgendaEvent, AgendaEventType, AgendaEventStatus, Course, Inquiry } from "@/lib/types/database";
-import { getInitialAgendaEvents } from "@/lib/data/initialAgenda";
+import type { AgendaEventInput } from "@/context/AdminDataContext";
+import { buildIcs } from "@/lib/utils/ics";
 import BrandStripe from "@/components/ui/BrandStripe";
-
-const AGENDA_STORAGE_KEY = "safety_works_agenda_events_v1";
 
 type ViewMode = "month" | "week" | "day" | "year" | "list";
 
 interface AgendaManagerProps {
+  events: AgendaEvent[];
+  onSaveEvent: (input: AgendaEventInput, id?: string) => Promise<unknown>;
+  onDeleteEvent: (id: string) => Promise<void>;
   courses?: Course[];
   inquiries?: Inquiry[];
   preselectedInquiry?: Inquiry | null;
   onClearPreselectedInquiry?: () => void;
   onNavigateToInquiries?: () => void;
-  showToast?: (msg: string) => void;
+  showToast?: (msg: string, tone?: "success" | "error") => void;
 }
 
 const MONTH_NAMES_IT = [
@@ -125,6 +127,9 @@ const STATUS_CONFIG: Record<AgendaEventStatus, { label: string; badge: string }>
 };
 
 export default function AgendaManager({
+  events,
+  onSaveEvent,
+  onDeleteEvent,
   courses = [],
   inquiries = [],
   preselectedInquiry,
@@ -132,29 +137,8 @@ export default function AgendaManager({
   onNavigateToInquiries,
   showToast,
 }: AgendaManagerProps) {
-  // 1. STATO EVENTI & PERSISTENZA
-  const [events, setEvents] = useState<AgendaEvent[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(AGENDA_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (e) {
-        console.error("Errore lettura eventi agenda da localStorage:", e);
-      }
-    }
-    return getInitialAgendaEvents();
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(AGENDA_STORAGE_KEY, JSON.stringify(events));
-    } catch (e) {
-      console.error("Errore salvataggio eventi agenda:", e);
-    }
-  }, [events]);
+  // 1. STATO: gli eventi arrivano da Supabase (props), nessuna copia locale
+  const [isSaving, setIsSaving] = useState(false);
 
   // Se viene fornita una richiesta dal sito da pianificare, apre automaticamente il modale precompilato
   useEffect(() => {
@@ -372,7 +356,7 @@ export default function AgendaManager({
       endTime: "13:00",
       location: inq.address ? `${inq.address} ${inq.city || ""}`.trim() : "Aula Didattica Porto Torres",
       instructor: "",
-      courseId: inq.courseSlug || "",
+      courseId: inq.courseId || "",
       maxParticipants: Number(inq.participantsCount) || 15,
       status: "confermato",
       notes: `Richiesta dal sito | Email: ${inq.email}${inq.phone ? ` | Tel: ${inq.phone}` : ""}${inq.notes ? ` | Note: ${inq.notes}` : ""}`,
@@ -413,101 +397,69 @@ export default function AgendaManager({
     setIsModalOpen(true);
   };
 
-  // Save Event
-  const handleSaveEvent = (e: React.FormEvent) => {
+  // Save Event (Supabase)
+  const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.startDate) {
-      alert("Inserisci almeno il titolo e la data di inizio dell'impegno.");
+      showToast?.("Inserisci almeno il titolo e la data di inizio dell'impegno.", "error");
       return;
     }
 
-    const payloadCustomType =
-      formData.type === "altro" && formData.customType.trim() ? formData.customType.trim() : undefined;
-    const payloadInquiryId = formData.inquiryId?.trim() || undefined;
-    const payloadClientName = payloadInquiryId ? formData.clientName.trim() || undefined : undefined;
-    const payloadClientCompany = payloadInquiryId ? formData.clientCompany.trim() || undefined : undefined;
-    const payloadClientPhone = payloadInquiryId ? formData.clientPhone.trim() || undefined : undefined;
-    const payloadClientEmail = payloadInquiryId ? formData.clientEmail.trim() || undefined : undefined;
+    const hasInquiry = Boolean(formData.inquiryId?.trim());
+    const input: AgendaEventInput = {
+      title: formData.title,
+      description: formData.description,
+      type: formData.type,
+      customType: formData.customType,
+      status: formData.status,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      location: formData.location,
+      instructor: formData.instructor,
+      courseId: formData.courseId,
+      maxParticipants: Number(formData.maxParticipants) || undefined,
+      notes: formData.notes,
+      inquiryId: formData.inquiryId,
+      clientName: hasInquiry ? formData.clientName : "",
+      clientCompany: hasInquiry ? formData.clientCompany : "",
+      clientPhone: hasInquiry ? formData.clientPhone : "",
+      clientEmail: hasInquiry ? formData.clientEmail : "",
+    };
 
-    if (editingEventId) {
-      setEvents((prev) =>
-        prev.map((evt) =>
-          evt.id === editingEventId
-            ? {
-                ...evt,
-                ...formData,
-                customType: payloadCustomType,
-                inquiryId: payloadInquiryId,
-                clientName: payloadClientName,
-                clientCompany: payloadClientCompany,
-                clientPhone: payloadClientPhone,
-                clientEmail: payloadClientEmail,
-                maxParticipants: Number(formData.maxParticipants) || 15,
-              }
-            : evt
-        )
-      );
-      showToast?.("Impegno aggiornato con successo!");
-    } else {
-      const newEvt: AgendaEvent = {
-        id: `evt-${Date.now()}`,
-        ...formData,
-        customType: payloadCustomType,
-        inquiryId: payloadInquiryId,
-        clientName: payloadClientName,
-        clientCompany: payloadClientCompany,
-        clientPhone: payloadClientPhone,
-        clientEmail: payloadClientEmail,
-        maxParticipants: Number(formData.maxParticipants) || 15,
-        created_at: new Date().toISOString(),
-      };
-      setEvents((prev) => [newEvt, ...prev]);
-      showToast?.("Nuovo impegno inserito in agenda!");
+    setIsSaving(true);
+    try {
+      await onSaveEvent(input, editingEventId ?? undefined);
+      showToast?.(editingEventId ? "Impegno aggiornato." : "Nuovo impegno inserito in agenda.");
+      setIsModalOpen(false);
+    } catch (err) {
+      showToast?.(err instanceof Error ? err.message : "Salvataggio non riuscito.", "error");
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsModalOpen(false);
   };
 
-  // Delete Event
-  const handleDeleteEvent = (id: string) => {
-    setEvents((prev) => prev.filter((evt) => evt.id !== id));
-    setDeleteConfirmId(null);
-    setSelectedEventForDetail(null);
-    showToast?.("Impegno rimosso dall'agenda.");
+  // Delete Event (Supabase)
+  const handleDeleteEvent = async (id: string) => {
+    try {
+      await onDeleteEvent(id);
+      setDeleteConfirmId(null);
+      setSelectedEventForDetail(null);
+      showToast?.("Impegno rimosso dall'agenda.");
+    } catch (err) {
+      showToast?.(err instanceof Error ? err.message : "Eliminazione non riuscita.", "error");
+    }
   };
 
   // Export iCal (.ics)
   const handleExportIcs = () => {
     if (events.length === 0) {
-      alert("Nessun evento da esportare.");
+      showToast?.("Nessun evento da esportare.", "error");
       return;
     }
 
-    let icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Safety Work S.r.l.s.//Agenda Operativa//IT\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n";
-
-    events.forEach((evt) => {
-      const dateNoDash = evt.startDate.replace(/-/g, "");
-      const timeStartNoColon = (evt.startTime || "09:00").replace(/:/g, "") + "00";
-      const timeEndNoColon = (evt.endTime || "13:00").replace(/:/g, "") + "00";
-
-      icsContent += "BEGIN:VEVENT\r\n";
-      icsContent += `UID:${evt.id}@safetyworks.it\r\n`;
-      icsContent += `DTSTAMP:${dateNoDash}T000000Z\r\n`;
-      icsContent += `DTSTART:${dateNoDash}T${timeStartNoColon}\r\n`;
-      icsContent += `DTEND:${dateNoDash}T${timeEndNoColon}\r\n`;
-      icsContent += `SUMMARY:${evt.title.replace(/\n/g, " ")}\r\n`;
-      if (evt.location) icsContent += `LOCATION:${evt.location.replace(/\n/g, " ")}\r\n`;
-      if (evt.description || evt.notes) {
-        const desc = `${evt.description || ""} ${evt.notes ? "Note: " + evt.notes : ""}`.trim();
-        icsContent += `DESCRIPTION:${desc.replace(/\n/g, " ")}\r\n`;
-      }
-      icsContent += `STATUS:${evt.status === "confermato" ? "CONFIRMED" : "TENTATIVE"}\r\n`;
-      icsContent += "END:VEVENT\r\n";
-    });
-
-    icsContent += "END:VCALENDAR\r\n";
-
-    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const blob = new Blob([buildIcs(events)], { type: "text/calendar;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -515,17 +467,8 @@ export default function AgendaManager({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast?.("File calendario .ICS esportato con successo!");
-  };
-
-  // Reset a dati iniziali
-  const handleResetToInitial = () => {
-    if (confirm("Vuoi davvero ripristinare gli eventi dell'agenda con il set predefinito? I tuoi eventi attuali verranno sostituiti.")) {
-      const init = getInitialAgendaEvents();
-      setEvents(init);
-      localStorage.setItem(AGENDA_STORAGE_KEY, JSON.stringify(init));
-      showToast?.("Agenda ripristinata con gli eventi dimostrativi.");
-    }
+    URL.revokeObjectURL(url);
+    showToast?.("File calendario .ICS esportato.");
   };
 
   // Calcolo celle del Mese (compresi giorni mese precedente e successivo)
@@ -1911,7 +1854,7 @@ export default function AgendaManager({
                                 ? `Messaggio cliente: "${selectedInq.message}"`
                                 : formData.description,
                               type: selectedInq.type === "corso" ? "corso" : formData.type,
-                              courseId: selectedInq.courseSlug || formData.courseId,
+                              courseId: selectedInq.courseId || formData.courseId,
                               maxParticipants: selectedInq.participantsCount || formData.maxParticipants,
                               location: selectedInq.address
                                 ? `${selectedInq.address} ${selectedInq.city || ""}`.trim()
@@ -2025,7 +1968,7 @@ export default function AgendaManager({
                     <select
                       value={formData.courseId}
                       onChange={(e) => {
-                        const selectedCourse = courses.find((c) => c.slug === e.target.value || c.id === e.target.value);
+                        const selectedCourse = courses.find((c) => c.id === e.target.value);
                         setFormData({
                           ...formData,
                           courseId: e.target.value,
@@ -2036,7 +1979,7 @@ export default function AgendaManager({
                     >
                       <option value="">-- Nessun corso collegato (titolo libero) --</option>
                       {courses.map((c) => (
-                        <option key={c.id} value={c.slug}>
+                        <option key={c.id} value={c.id}>
                           {c.title} ({c.duration_hours}h)
                         </option>
                       ))}
@@ -2137,6 +2080,7 @@ export default function AgendaManager({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSaving}
                   className="px-5 sm:px-6 py-2 bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all"
                 >
                   {editingEventId ? "Salva Modifiche" : "Inserisci in Agenda"}

@@ -64,6 +64,12 @@ export default function TrendingCoursesSection({
               <CourseCard key={course.id} course={course} />
             ))}
           </div>
+          {openCourses.length === 0 && (
+            <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">
+              Al momento non ci sono corsi con iscrizioni aperte. Consulta il catalogo completo o contattaci per le
+              prossime date.
+            </div>
+          )}
         </div>
 
         {/* Engineering Dimension Guide */}

@@ -22,9 +22,7 @@ interface AdminSidebarProps {
   categoriesCount: number;
   servicesCount: number;
   agendaEventsCount?: number;
-  isSupabaseActive: boolean;
-  onExportJson?: () => void;
-  onResetClick?: () => void;
+  userEmail: string;
   onLogout: () => void;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
@@ -39,9 +37,7 @@ export default function AdminSidebar({
   categoriesCount,
   servicesCount,
   agendaEventsCount,
-  isSupabaseActive,
-  onExportJson,
-  onResetClick,
+  userEmail,
   onLogout,
   mobileOpen,
   setMobileOpen,
@@ -110,12 +106,10 @@ export default function AdminSidebar({
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span
-                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                    isSupabaseActive ? "bg-emerald-400 animate-pulse" : "bg-[#f58220]"
-                  }`}
+                  className={"w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-400 animate-pulse"}
                 />
                 <span className="text-[10px] text-slate-400 font-medium truncate">
-                  {isSupabaseActive ? "Supabase Cloud" : "Database Locale"}
+                  Supabase Cloud
                 </span>
               </div>
             </div>
@@ -188,8 +182,8 @@ export default function AdminSidebar({
               <UserCheck className="w-4 h-4 text-[#008e97]" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-bold text-white truncate leading-tight">Admin Master</div>
-              <div className="text-[10px] text-slate-400 truncate mt-0.5">admin@safetyworks.it</div>
+              <div className="text-xs font-bold text-white truncate leading-tight">Amministratore</div>
+              <div className="text-[10px] text-slate-400 truncate mt-0.5">{userEmail || "—"}</div>
             </div>
           </div>
 

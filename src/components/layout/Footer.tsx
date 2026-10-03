@@ -6,7 +6,17 @@ import { Shield, ArrowUp, Mail, Phone, MapPin, CheckCircle2, PhoneCall, ArrowRig
 import { COMPANY_CONFIG } from "@/config/company";
 import BrandStripe from "@/components/ui/BrandStripe";
 
-export default function Footer() {
+export interface FooterCourseLink {
+  name: string;
+  href: string;
+}
+
+interface FooterProps {
+  /** Corsi in evidenza mostrati nella colonna "Corsi Principali" (dal database). */
+  courseLinks?: FooterCourseLink[];
+}
+
+export default function Footer({ courseLinks = [] }: FooterProps) {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -168,29 +178,16 @@ export default function Footer() {
               <span>Corsi Principali</span>
             </h4>
             <ul className="space-y-2.5 text-sm text-slate-300">
+              {courseLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="hover:text-[#f58220] transition-colors">
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
               <li>
-                <Link href="/corsi/rspp-datore-di-lavoro" className="hover:text-[#f58220] transition-colors">
-                  RSPP Datore di Lavoro
-                </Link>
-              </li>
-              <li>
-                <Link href="/corsi/rappresentante-lavoratori-sicurezza-rls" className="hover:text-[#f58220] transition-colors">
-                  Corso RLS 32 Ore
-                </Link>
-              </li>
-              <li>
-                <Link href="/corsi/addetto-antincendio-emergenze" className="hover:text-[#f58220] transition-colors">
-                  Addetto Antincendio
-                </Link>
-              </li>
-              <li>
-                <Link href="/corsi/primo-soccorso-aziendale" className="hover:text-[#f58220] transition-colors">
-                  Primo Soccorso Aziendale
-                </Link>
-              </li>
-              <li>
-                <Link href="/corsi/patentino-carrelli-elevatori-muletto" className="hover:text-[#f58220] transition-colors">
-                  Patentino Muletto
+                <Link href="/corsi" className="font-semibold text-white hover:text-[#f58220] transition-colors">
+                  Vedi tutto il catalogo →
                 </Link>
               </li>
             </ul>

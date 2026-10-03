@@ -1,4 +1,3 @@
-"use client";
 
 import React from "react";
 import {
@@ -17,7 +16,8 @@ import {
   Users,
 } from "lucide-react";
 import Link from "@/components/ui/Link";
-import { useData } from "@/context/DataContext";
+import type { ServiceItem } from "@/lib/types/database";
+import { COMPANY_CONFIG } from "@/config/company";
 import BrandStripe from "@/components/ui/BrandStripe";
 
 const SERVICE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -35,8 +35,7 @@ const SERVICE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
   PhoneCall,
 };
 
-export default function ServicesSection() {
-  const { services } = useData();
+export default function ServicesSection({ services }: { services: ServiceItem[] }) {
 
 
   return (
@@ -77,22 +76,32 @@ export default function ServicesSection() {
         </div>
 
         {/* 4 Technical Service Cards Stondate Bianche con Header Immagine */}
+        {services.length === 0 && (
+          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">
+            I servizi saranno pubblicati a breve. Per una consulenza usa il modulo qui sotto o chiamaci.
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {services.map((srv) => {
-            const Icon = SERVICE_ICONS[srv.iconName] || ShieldAlert;
+            const Icon = SERVICE_ICONS[srv.icon_name] || ShieldAlert;
             return (
               <div
-                key={srv.code}
+                key={srv.id}
                 className="group relative bg-white border border-slate-200 hover:border-[#008e97]/60 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden"
               >
                 {/* Banner Fotografico Superiore */}
                 <div className="relative h-48 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 mb-6 overflow-hidden rounded-t-3xl">
-                  <img
-                    src={srv.image}
-                    alt={srv.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
+                  {srv.image_url ? (
+                    <img
+                      src={srv.image_url}
+                      alt={srv.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-slate-800" />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent" />
 
                   {/* Badge Identificativi su Foto */}
@@ -184,7 +193,7 @@ export default function ServicesSection() {
           </div>
 
           <a
-            href="tel:+390287198240"
+            href={`tel:${COMPANY_CONFIG.contacts.phoneClean}`}
             className="flex-shrink-0 inline-flex items-center gap-2 px-6 py-3.5 bg-[#df0000] hover:bg-[#be0000] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow-md transition-all whitespace-nowrap"
           >
             <PhoneCall className="w-4 h-4 shrink-0" />
