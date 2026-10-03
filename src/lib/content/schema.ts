@@ -15,9 +15,9 @@ export const CONTENT_DEFAULTS = {
   // ---------------------------------------------------------------- home: hero
   "home.hero.image": "https://images.unsplash.com/photo-1581094288338-2314dddb7ece?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
   "home.hero.badge": "Conformità Integrata D.Lgs. 81/08 & Certificazioni di Legge",
-  "home.hero.title": "Consulenza, Formazione e Progettazione per la [[Sicurezza sul Lavoro]]",
+  "home.hero.title": "Consulenza e Formazione per la [[Sicurezza nei Luoghi di Lavoro]]",
   "home.hero.subtitle":
-    "Supportiamo aziende, imprese e professionisti nella gestione completa degli adempimenti normativi. La nostra missione è promuovere una cultura della sicurezza, trasformando l'obbligo normativo in valore organizzativo.",
+    "Supportiamo aziende, associazioni e professionisti nella gestione completa degli adempimenti normativi. La nostra missione è promuovere una cultura della sicurezza a 360°, trasformando l'obbligo normativo in valore organizzativo.",
   "home.hero.chip1": "Valutazioni Fonometriche",
   "home.hero.chip2": "Formazione Completa",
   "home.hero.chip3": "Coordinamento Cantieri",
@@ -34,18 +34,18 @@ export const CONTENT_DEFAULTS = {
 
   // ------------------------------------------------------------ home: corsi
   "home.courses.badge": "Scopri i corsi disponibili",
-  "home.courses.title": "Corsi del Momento",
+  "home.courses.title": "Corsi in Programma",
   "home.courses.subtitle":
     "Sessioni formative confermate con posti disponibili in tempo reale. Seleziona una scheda per consultare i moduli didattici e bloccare direttamente la tua partecipazione.",
 
   // ------------------------------------------------------------ home: chi siamo
   "home.about.image": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=2000&auto=format&fit=crop&q=80",
   "home.about.badge": "Chi Siamo",
-  "home.about.title": "Il Tuo Partner Strategico per la [[Sicurezza sul Lavoro]]",
+  "home.about.title": "Il Tuo Partner Strategico per la [[Sicurezza nei Luoghi di Lavoro]]",
   "home.about.text1":
-    "Siamo un team di professionisti appassionati. Da oltre 15 anni affianchiamo imprese e professionisti su tutto il territorio nazionale con un obiettivo chiaro: **trasformare gli obblighi normativi in un vantaggio competitivo** per la tua azienda.",
+    "Siamo un team di professionisti che affianca imprese, associazioni e professionisti su tutto il territorio nazionale con un obiettivo chiaro: **organizzare e trasformare gli obblighi normativi in un vantaggio competitivo** per il tuo progetto.",
   "home.about.text2":
-    "Dalla consulenza in cantiere alla formazione accreditata, mettiamo in campo competenze ingegneristiche e legali per garantirti una tutela a 360 gradi.",
+    "Dalla consulenza in cantiere alla formazione accreditata, mettiamo in campo le nostre competenze per garantirti una tutela a 360 gradi.",
   "home.about.stat1_value": "15+",
   "home.about.stat1_label": "Anni di Esperienza sul Campo",
   "home.about.stat2_value": "25k+",
@@ -54,14 +54,14 @@ export const CONTENT_DEFAULTS = {
 
   // ------------------------------------------------------------ home: servizi
   "home.services.badge": "Soluzioni Tecniche • D.Lgs. 81/08",
-  "home.services.title": "Servizi di Sicurezza e Ingegneria",
+  "home.services.title": "Servizi di Sicurezza",
   "home.services.subtitle":
     "Interventi specialistici per azzerare i rischi sanzionatori e garantire continuità e sicurezza operativa ad ogni settore d'impresa.",
   "home.services.button": "Richiedi Check-Up Tecnico",
-  "home.services.alert_tag": "FAST TRACK • RISPOSTA H24",
+  "home.services.alert_tag": "FAST TRACK",
   "home.services.alert_title": "Hai ricevuto una prescrizione o un verbale da ASL / ITL / Vigili del Fuoco?",
   "home.services.alert_text":
-    "I nostri periti e ingegneri intervengono entro 24 ore con sopralluogo urgente per predisporre le memorie tecniche e regolarizzare la posizione aziendale entro i termini perentori.",
+    "I nostri tecnici interverranno con sopralluogo urgente per visionare e regolarizzare la posizione aziendale entro i termini perentori.",
   "home.services.alert_button": "Intervento Ispettivo Urgente",
 
   // ------------------------------------------------------------ home: contatti e mappa
@@ -73,18 +73,25 @@ export const CONTENT_DEFAULTS = {
 
   // ------------------------------------------------------------ pagina chi siamo
   "about.hero.image": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=2000&auto=format&fit=crop&q=80",
-  "about.hero.title": "La Nostra [[Storia]] e il Nostro [[Metodo]]",
-  "about.hero.subtitle":
-    "Oltre 15 anni di esperienza dedicati a trasformare la sicurezza sul lavoro da un semplice obbligo di legge a un asset organizzativo strategico per le imprese.",
+  "about.hero.badge": "Chi Siamo",
+  "about.hero.title": "Dai cantieri alla [[consulenza tecnica]].",
+  "about.hero.subtitle": "In Safety Works uniamo l'esperienza sul campo a una formazione specialistica.",
 
   "about.approach.image": "https://images.unsplash.com/photo-1531538606174-0f90ff5dce83?w=800&auto=format&fit=crop&q=80",
-  "about.approach.title": "Il nostro approccio alla [[Prevenzione]]",
+  "about.approach.title": "Sicurezza sul lavoro, formazione e gestione della sicurezza negli eventi.",
   "about.approach.text1":
-    "**Safety Works S.r.l.s.** nasce con l'obiettivo di affiancare datori di lavoro, RSPP e professionisti nella complessa gestione degli adempimenti previsti dal **D.Lgs. 81/2008** e dalle normative collegate.",
+    "Safety Works S.r.l.s. nasce per affiancare aziende, datori di lavoro, RSPP, professionisti e organizzatori di eventi nella gestione della sicurezza, offrendo competenza tecnica, esperienza e soluzioni costruite sulle esigenze specifiche di ogni realtà.",
   "about.approach.text2":
-    "Crediamo fermamente che la tutela della salute nei luoghi di lavoro non debba essere un ostacolo burocratico, bensì un valore etico ed economico: un'azienda conforme è un'azienda più produttiva, affidabile e protetta da rischi sanzionatori o penali.",
+    "Crediamo che la tutela della salute e della sicurezza non debba essere vissuta come un semplice adempimento burocratico, ma come un **valore concreto, etico ed economico**. Investire nella prevenzione significa proteggere le persone, ridurre i rischi e costruire organizzazioni più solide, efficienti e affidabili.",
   "about.approach.text3":
-    "Il nostro team multidisciplinare è composto da **ingegneri, tecnici della prevenzione e docenti formatori qualificati**, in grado di operare sia con sopralluoghi tecnici asseverati sia con didattica accreditata.",
+    "Operiamo nel rispetto del **D.Lgs. 81/2008** e della normativa vigente, accompagnando i nostri clienti nella gestione della sicurezza sul lavoro attraverso consulenza tecnica, sopralluoghi, valutazione e gestione dei rischi, formazione e supporto agli adempimenti previsti dalla normativa.",
+  "about.approach.text4":
+    "La nostra esperienza si estende anche al mondo degli **eventi, delle manifestazioni e degli spettacoli**, dove affianchiamo organizzatori e committenti nella progettazione e nella gestione della sicurezza. Dalla predisposizione dei piani di sicurezza alla gestione operativa delle attività di **Safety & Security**, fino alla fornitura di **addetti antincendio e personale qualificato**, sviluppiamo soluzioni coordinate in funzione delle caratteristiche di ogni evento.",
+  "about.approach.text5":
+    "Il nostro team multidisciplinare, composto da **ingegneri, tecnici della prevenzione e docenti formatori qualificati**, unisce competenza, visione tecnica e presenza sul campo per garantire un supporto completo, dalla progettazione alla gestione operativa.",
+  "about.approach.text6":
+    "Per noi la sicurezza non è soltanto conformità normativa. È **prevenzione, organizzazione, responsabilità e valore**.",
+  "about.approach.closing": "Safety Works. La sicurezza, dalla progettazione alla gestione.",
 
   "about.pillars.title": "I Nostri Pilastri Operativi",
   "about.pillars.subtitle": "Copertura normativa a 360 gradi per la piena conformità di ogni ambiente di lavoro.",
@@ -274,6 +281,7 @@ export const CONTENT_SECTIONS: ContentSection[] = [
     previewHref: "/chi-siamo",
     fields: [
       f("about.hero.image", "Immagine di sfondo", "image"),
+      f("about.hero.badge", "Etichetta in alto"),
       f("about.hero.title", "Titolo", "textarea", { hint: HIGHLIGHT_HINT }),
       f("about.hero.subtitle", "Sottotitolo", "textarea"),
     ],
@@ -282,13 +290,17 @@ export const CONTENT_SECTIONS: ContentSection[] = [
     id: "about-approach",
     page: "Pagina Chi siamo",
     title: "Il nostro approccio",
-    description: "Il blocco con i tre paragrafi di presentazione e la foto a destra.",
+    description: "Il blocco con i paragrafi di presentazione, la frase finale e la foto a destra.",
     previewHref: "/chi-siamo",
     fields: [
       f("about.approach.title", "Titolo", "textarea", { hint: HIGHLIGHT_HINT }),
       f("about.approach.text1", "Paragrafo 1", "textarea", { hint: BOLD_HINT }),
       f("about.approach.text2", "Paragrafo 2", "textarea", { hint: BOLD_HINT, allowEmpty: true }),
       f("about.approach.text3", "Paragrafo 3", "textarea", { hint: BOLD_HINT, allowEmpty: true }),
+      f("about.approach.text4", "Paragrafo 4", "textarea", { hint: BOLD_HINT, allowEmpty: true }),
+      f("about.approach.text5", "Paragrafo 5", "textarea", { hint: BOLD_HINT, allowEmpty: true }),
+      f("about.approach.text6", "Paragrafo 6", "textarea", { hint: BOLD_HINT, allowEmpty: true }),
+      f("about.approach.closing", "Frase finale in evidenza", "text", { allowEmpty: true }),
       f("about.approach.image", "Fotografia", "image"),
     ],
   },

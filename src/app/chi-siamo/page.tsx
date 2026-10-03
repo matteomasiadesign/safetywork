@@ -50,7 +50,7 @@ export default async function AboutPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider mb-6 shadow-sm">
               <Shield className="w-3.5 h-3.5 text-[#008e97]" />
-              <span>{COMPANY_CONFIG.name}</span>
+              <span>{content["about.hero.badge"]}</span>
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight mb-6 text-balance">
               <RichText text={content["about.hero.title"]} highlight={["text-[#008e97]", "text-[#df0000]"]} />
@@ -70,13 +70,25 @@ export default async function AboutPage() {
                   <RichText text={content["about.approach.title"]} highlight="text-[#008e97]" />
                 </h2>
                 <div className="space-y-6 text-slate-600 leading-relaxed text-base sm:text-lg">
-                  {(["about.approach.text1", "about.approach.text2", "about.approach.text3"] as const).map(
+                  {(
+                    [
+                      "about.approach.text1",
+                      "about.approach.text2",
+                      "about.approach.text3",
+                      "about.approach.text4",
+                      "about.approach.text5",
+                      "about.approach.text6",
+                    ] as const
+                  ).map(
                     (key) =>
                       content[key].trim() && (
                         <p key={key}>
                           <RichText text={content[key]} />
                         </p>
                       )
+                  )}
+                  {content["about.approach.closing"].trim() && (
+                    <p className="font-bold text-slate-900">{content["about.approach.closing"]}</p>
                   )}
                 </div>
               </div>
