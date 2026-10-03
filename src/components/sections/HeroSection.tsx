@@ -22,7 +22,7 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative flex flex-col justify-start px-4 sm:px-6 lg:px-8 border-b border-slate-200 overflow-hidden pt-12 pb-16 lg:pt-16 lg:pb-20">
+    <section className="relative flex flex-col justify-center min-h-[calc(100svh-72px)] px-4 sm:px-6 lg:px-8 border-b border-slate-200 overflow-hidden pt-12 pb-16 lg:pt-16 lg:pb-20">
       {/* Background Image & Overlay */}
       <div className="absolute inset-0 z-0">
         <img 
