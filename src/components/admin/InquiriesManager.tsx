@@ -1,35 +1,28 @@
+"use client";
+
 import React, { useState, useMemo } from "react";
 import Link from "@/components/ui/Link";
 import { Inquiry } from "@/lib/types/database";
 import { COMPANY_CONFIG } from "@/config/company";
+import AdminModal from "@/components/admin/ui/AdminModal";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import {
   Inbox,
   Search,
-  Filter,
   Phone,
   Mail,
   MessageSquare,
   MessageCircle,
-  Clock,
-  Calendar,
   CalendarPlus,
   Building,
-  User,
   GraduationCap,
-  Users,
-  CheckCircle2,
-  AlertCircle,
-  Archive,
   Trash2,
   ExternalLink,
   Edit3,
-  Check,
   X,
-  Sparkles,
-  Layers,
-  ArrowRight,
   ChevronDown,
   ChevronUp,
+  MoreHorizontal,
 } from "lucide-react";
 
 interface InquiriesManagerProps {
@@ -39,6 +32,26 @@ interface InquiriesManagerProps {
   onScheduleInquiry?: (inquiry: Inquiry) => void;
 }
 
+type StatusFilter = "all" | Inquiry["status"];
+
+/** Filtri per stato: colori da "acceso" (selezionato) e "spento". */
+const STATUS_CHIPS: {
+  id: StatusFilter;
+  label: string;
+  stat: "total" | "nuove" | "preventivi" | "confermate" | "nonInteressate" | "archiviate";
+  on: string;
+  off: string;
+  countOff: string;
+  dot?: string;
+}[] = [
+  { id: "all", label: "Tutte", stat: "total", on: "bg-slate-900 text-white", off: "bg-slate-50 text-slate-600 border-slate-200/60", countOff: "bg-slate-200/70 text-slate-600" },
+  { id: "nuovo", label: "Nuove", stat: "nuove", on: "bg-[#df0000] text-white", off: "bg-rose-50 text-[#df0000] border-rose-200/60", countOff: "bg-rose-200/60 text-[#df0000]", dot: "bg-[#df0000]" },
+  { id: "preventivo_inviato", label: "Preventivo", stat: "preventivi", on: "bg-amber-600 text-white", off: "bg-amber-50 text-amber-800 border-amber-200/60", countOff: "bg-amber-200/60 text-amber-800", dot: "bg-amber-500" },
+  { id: "confermato", label: "Confermate", stat: "confermate", on: "bg-emerald-600 text-white", off: "bg-emerald-50 text-emerald-800 border-emerald-200/60", countOff: "bg-emerald-200/60 text-emerald-800", dot: "bg-emerald-500" },
+  { id: "non_interessato", label: "Non interessate", stat: "nonInteressate", on: "bg-slate-700 text-white", off: "bg-slate-50 text-slate-500 border-slate-200/60", countOff: "bg-slate-200/70 text-slate-500" },
+  { id: "archiviato", label: "Archiviate", stat: "archiviate", on: "bg-slate-700 text-white", off: "bg-slate-50 text-slate-500 border-slate-200/60", countOff: "bg-slate-200/70 text-slate-500" },
+];
+
 export default function InquiriesManager({
   inquiries,
   onUpdateStatus,
@@ -47,7 +60,7 @@ export default function InquiriesManager({
 }: InquiriesManagerProps) {
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | Inquiry["status"]>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "corso" | "contatto">("all");
 
   // Expanded items state for progressive disclosure
@@ -60,8 +73,9 @@ export default function InquiriesManager({
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
 
-  // Delete confirmation modal state
+  // Conferma eliminazione e menu "altre azioni" (mobile)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<Inquiry | null>(null);
 
   // Statistics
   const stats = useMemo(() => {
@@ -73,8 +87,7 @@ export default function InquiriesManager({
     const confermate = inquiries.filter((i) => i.status === "confermato").length;
     const nonInteressate = inquiries.filter((i) => i.status === "non_interessato").length;
     const archiviate = inquiries.filter((i) => i.status === "archiviato").length;
-    const corsi = inquiries.filter((i) => i.type === "corso").length;
-    return { total, nuove, preventivi, confermate, nonInteressate, archiviate, corsi };
+    return { total, nuove, preventivi, confermate, nonInteressate, archiviate };
   }, [inquiries]);
 
   // Filtered inquiries
@@ -111,6 +124,13 @@ export default function InquiriesManager({
       return true;
     });
   }, [inquiries, statusFilter, typeFilter, searchQuery]);
+
+  const hasActiveFilters = Boolean(searchQuery) || typeFilter !== "all" || statusFilter !== "all";
+  const resetFilters = () => {
+    setSearchQuery("");
+    setTypeFilter("all");
+    setStatusFilter("all");
+  };
 
   const handleStartEditingNote = (inq: Inquiry) => {
     setEditingNoteId(inq.id);
@@ -156,7 +176,7 @@ export default function InquiriesManager({
     const subject = inquiry.courseTitle
       ? `Safety Works - Riscontro prenotazione per "${inquiry.courseTitle}"`
       : `Safety Works - Riscontro richiesta di contatto`;
-    
+
     const body = `Gentile ${inquiry.name},\n\n` +
       `La ringraziamo per averci contattato tramite il portale Safety Works S.r.l.s.\n\n` +
       (inquiry.courseTitle ? `In merito alla Sua richiesta per il corso "${inquiry.courseTitle}" (${inquiry.participantsCount || 1} partecipanti)${inquiry.editionLabel ? `, data indicata: ${inquiry.editionLabel}` : ""}:\n` : "") +
@@ -186,599 +206,514 @@ export default function InquiriesManager({
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300">
-      {/* 1. BARRA STRUMENTI & FILTRI COMPATTA */}
-      <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        {/* Sinistra: Filtri per stato con conteggi live */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <button
-            type="button"
-            onClick={() => setStatusFilter("all")}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "all"
-                ? "bg-slate-900 text-white shadow-xs"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60"
-            }`}
-          >
-            <span>Tutte</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "all" ? "bg-white/20 text-white" : "bg-slate-200/70 text-slate-600"
-              }`}
-            >
-              {stats.total}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setStatusFilter("nuovo")}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "nuovo"
-                ? "bg-[#df0000] text-white shadow-xs"
-                : "bg-rose-50 hover:bg-rose-100/80 text-[#df0000] border border-rose-200/60"
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-[#df0000] shrink-0" />
-            <span>Nuove</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "nuovo" ? "bg-white/20 text-white" : "bg-rose-200/60 text-[#df0000]"
-              }`}
-            >
-              {stats.nuove}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setStatusFilter("preventivo_inviato")}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "preventivo_inviato"
-                ? "bg-amber-600 text-white shadow-xs"
-                : "bg-amber-50 hover:bg-amber-100/80 text-amber-800 border border-amber-200/60"
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-            <span>Preventivo Inviato</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "preventivo_inviato" ? "bg-white/20 text-white" : "bg-amber-200/60 text-amber-800"
-              }`}
-            >
-              {stats.preventivi}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setStatusFilter("confermato")}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "confermato"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/60"
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span>Confermate</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "confermato" ? "bg-white/20 text-white" : "bg-emerald-200/60 text-emerald-800"
-              }`}
-            >
-              {stats.confermate}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setStatusFilter("non_interessato")}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "non_interessato"
-                ? "bg-slate-700 text-white shadow-xs"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200/60"
-            }`}
-          >
-            <span>Non Interessate</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "non_interessato" ? "bg-white/20 text-white" : "bg-slate-200/70 text-slate-500"
-              }`}
-            >
-              {stats.nonInteressate}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setStatusFilter("archiviato")}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "archiviato"
-                ? "bg-slate-700 text-white shadow-xs"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200/60"
-            }`}
-          >
-            <span>Archiviate</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "archiviato" ? "bg-white/20 text-white" : "bg-slate-200/70 text-slate-500"
-              }`}
-            >
-              {stats.archiviate}
-            </span>
-          </button>
-
-          {(searchQuery || typeFilter !== "all" || statusFilter !== "all") && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery("");
-                setTypeFilter("all");
-                setStatusFilter("all");
-              }}
-              className="text-[11px] text-[#df0000] hover:underline font-bold px-1.5 py-1 shrink-0"
-            >
-              Azzera
-            </button>
-          )}
-        </div>
-
-        {/* Destra: Campo Ricerca + Filtro Tipologia */}
-        <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 flex-1 sm:flex-initial">
-          <div className="relative flex-1 sm:w-60">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+    <div className="space-y-4">
+      {/* BARRA STRUMENTI: su mobile prima la ricerca, poi i filtri a scorrimento orizzontale */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2 lg:order-2 lg:shrink-0">
+          <div className="relative min-w-0 flex-1 lg:w-64 lg:flex-none">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
+              type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cerca cliente, corso, CF..."
-              className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+              placeholder="Cerca cliente, corso..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-10 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97] [&::-webkit-search-cancel-button]:hidden"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label="Cancella la ricerca"
+                className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600"
               >
-                <X className="w-3 h-3" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
 
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as any)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97] cursor-pointer"
+            onChange={(e) => setTypeFilter(e.target.value as "all" | "corso" | "contatto")}
+            aria-label="Tipo di richiesta"
+            className="shrink-0 cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
           >
             <option value="all">Tutti i tipi</option>
-            <option value="corso">🎓 Corsi</option>
-            <option value="contatto">💬 Contatti</option>
+            <option value="corso">Corsi</option>
+            <option value="contatto">Contatti</option>
           </select>
+        </div>
+
+        <div className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 no-scrollbar lg:order-1 lg:mx-0 lg:px-0">
+          {STATUS_CHIPS.map((chip) => {
+            const selected = statusFilter === chip.id;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                onClick={() => setStatusFilter(chip.id)}
+                aria-pressed={selected}
+                className={`flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-xs font-bold transition-colors ${
+                  selected ? `${chip.on} border-transparent shadow-xs` : `${chip.off} hover:brightness-95`
+                }`}
+              >
+                {chip.dot && <span className={`h-2 w-2 shrink-0 rounded-full ${selected ? "bg-white" : chip.dot}`} />}
+                <span>{chip.label}</span>
+                <span className={`rounded-md px-1.5 text-[10px] font-semibold leading-5 ${selected ? "bg-white/20 text-white" : chip.countOff}`}>
+                  {stats[chip.stat]}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* 2. LISTA RICHIESTE AD ALTA DENSITÀ (STILE INBOX LINEAR / STRIPE) */}
-      <div className="space-y-2.5">
-        {filteredInquiries.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-xs">
-            <Inbox className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <h4 className="text-sm font-bold text-slate-800">Nessuna richiesta trovata</h4>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Non ci sono richieste o prenotazioni corrispondenti ai filtri attivi.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredInquiries.map((inq) => {
-              const isCourse = inq.type === "corso";
-              const whatsappLink = getWhatsAppLink(inq);
-              const mailtoLink = getMailtoLink(inq);
-              const isExpanded = Boolean(expandedIds[inq.id]);
-              const hasFiscalData = Boolean(
-                inq.fiscalCode || inq.vatNumber || inq.address || inq.birthDate || inq.atecoCode || inq.sdiCode
-              );
+      {hasActiveFilters && (
+        <div className="flex items-center justify-between gap-3 px-1 text-xs text-slate-500">
+          <span>
+            <strong className="font-bold text-slate-700">{filteredInquiries.length}</strong> di {inquiries.length} richieste
+          </span>
+          <button type="button" onClick={resetFilters} className="min-h-9 px-2 font-bold text-[#df0000] hover:underline">
+            Azzera filtri
+          </button>
+        </div>
+      )}
 
-              return (
-                <div
-                  key={inq.id}
-                  className={`bg-white rounded-2xl border transition-all shadow-xs hover:shadow-md overflow-hidden ${
-                    inq.status === "nuovo"
-                      ? "border-rose-300 ring-1 ring-rose-200/70"
-                      : inq.status === "preventivo_inviato" || inq.status === "contattato"
-                      ? "border-amber-300 ring-1 ring-amber-200/50"
-                      : inq.status === "confermato"
-                      ? "border-emerald-300 ring-1 ring-emerald-200/50"
-                      : inq.status === "non_interessato"
-                      ? "border-slate-200 opacity-70 bg-slate-50/40"
-                      : "border-slate-200"
-                  }`}
-                >
-                  {/* 1. Header Card: Dropdown Stato (sinistra) + Data & Tipologia (destra) */}
-                  <div className="px-3.5 sm:px-4 py-2.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={inq.status === "contattato" ? "preventivo_inviato" : inq.status}
-                        onChange={(e) => onUpdateStatus(inq.id, e.target.value as Inquiry["status"])}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-black uppercase tracking-wider border cursor-pointer focus:outline-none transition-all shadow-2xs ${
-                          inq.status === "nuovo"
-                            ? "bg-[#fdf2f2] text-[#df0000] border-[#df0000]/40"
-                            : inq.status === "preventivo_inviato" || inq.status === "contattato"
-                            ? "bg-amber-50 text-amber-800 border-amber-300"
-                            : inq.status === "confermato"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                            : inq.status === "non_interessato"
-                            ? "bg-slate-100 text-slate-500 border-slate-300 line-through"
-                            : "bg-slate-100 text-slate-600 border-slate-200"
-                        }`}
-                      >
-                        <option value="nuovo">🔴 Nuovo</option>
-                        <option value="preventivo_inviato">🟡 Preventivo Inviato</option>
-                        <option value="confermato">🟢 Confermato</option>
-                        <option value="non_interessato">⚪ Non Interessato</option>
-                        <option value="archiviato">📁 Archiviato</option>
-                      </select>
+      {/* LISTA RICHIESTE */}
+      {filteredInquiries.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-xs">
+          <Inbox className="mx-auto mb-2 h-10 w-10 text-slate-300" />
+          <h4 className="text-sm font-bold text-slate-800">Nessuna richiesta trovata</h4>
+          <p className="mt-0.5 text-xs text-slate-500">Non ci sono richieste o prenotazioni corrispondenti ai filtri attivi.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredInquiries.map((inq) => {
+            const isCourse = inq.type === "corso";
+            const whatsappLink = getWhatsAppLink(inq);
+            const mailtoLink = getMailtoLink(inq);
+            const isExpanded = Boolean(expandedIds[inq.id]);
+            const hasFiscalData = Boolean(
+              inq.fiscalCode || inq.vatNumber || inq.address || inq.birthDate || inq.atecoCode || inq.sdiCode
+            );
 
-                      {inq.status === "nuovo" && (
-                        <span className="w-2 h-2 rounded-full bg-[#df0000] animate-ping" />
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 text-right">
-                      {inq.clientType && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white text-slate-600 border border-slate-200/80 shadow-2xs">
-                          {inq.clientType === "azienda" ? "Azienda" : "Privato"}
-                        </span>
-                      )}
-                      <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap" suppressHydrationWarning>
-                        {formatDate(inq.created_at)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 2. Corpo Card: Nome, Azienda, Box Corso o Servizio */}
-                  <div className="p-3.5 sm:p-4 space-y-2.5">
-                    <div className="min-w-0">
-                      <h3 className="font-extrabold text-base text-slate-900 tracking-tight leading-snug truncate">
-                        {inq.name}
-                      </h3>
-                      {inq.company && (
-                        <div className="text-xs text-slate-600 flex items-center gap-1.5 mt-0.5 font-medium min-w-0">
-                          <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{inq.company}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Box Corso / Servizio Elegante */}
-                    <div
-                      className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-3 ${
-                        isCourse
-                          ? "bg-[#e6f6f7]/60 border-[#008e97]/25 text-slate-900"
-                          : "bg-amber-50/60 border-amber-200/60 text-slate-900"
+            return (
+              <div
+                key={inq.id}
+                className={`overflow-hidden rounded-2xl border bg-white shadow-xs transition-all hover:shadow-md ${
+                  inq.status === "nuovo"
+                    ? "border-rose-300 ring-1 ring-rose-200/70"
+                    : inq.status === "preventivo_inviato" || inq.status === "contattato"
+                    ? "border-amber-300 ring-1 ring-amber-200/50"
+                    : inq.status === "confermato"
+                    ? "border-emerald-300 ring-1 ring-emerald-200/50"
+                    : inq.status === "non_interessato"
+                    ? "border-slate-200 bg-slate-50/40 opacity-70"
+                    : "border-slate-200"
+                }`}
+              >
+                {/* 1. Stato (modificabile) + data */}
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-slate-100 bg-slate-50/80 px-3.5 py-2.5 sm:px-4">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={inq.status === "contattato" ? "preventivo_inviato" : inq.status}
+                      onChange={(e) => onUpdateStatus(inq.id, e.target.value as Inquiry["status"])}
+                      aria-label={`Stato della richiesta di ${inq.name}`}
+                      className={`cursor-pointer rounded-lg border px-2.5 py-1 text-[11px] font-black uppercase tracking-wider shadow-2xs transition-all focus:outline-none ${
+                        inq.status === "nuovo"
+                          ? "border-[#df0000]/40 bg-[#fdf2f2] text-[#df0000]"
+                          : inq.status === "preventivo_inviato" || inq.status === "contattato"
+                          ? "border-amber-300 bg-amber-50 text-amber-800"
+                          : inq.status === "confermato"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                          : inq.status === "non_interessato"
+                          ? "border-slate-300 bg-slate-100 text-slate-500 line-through"
+                          : "border-slate-200 bg-slate-100 text-slate-600"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-2xs ${
-                            isCourse ? "bg-[#008e97] text-white" : "bg-[#f58220] text-white"
-                          }`}
-                        >
-                          {isCourse ? <GraduationCap className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs sm:text-sm font-bold truncate">
-                            {inq.courseTitle || inq.service_type || "Richiesta Consulenza"}
-                          </div>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5 flex-wrap">
-                            {inq.participantsCount && (
-                              <span className="font-semibold text-slate-700">
-                                👥 {inq.participantsCount} {inq.participantsCount === 1 ? "partecipante" : "partecipanti"}
-                              </span>
-                            )}
-                            {inq.editionLabel && (
-                              <span className="font-semibold text-[#008e97]">• 📅 {inq.editionLabel}</span>
-                            )}
-                            {inq.preferredMode && (
-                              <span>• {inq.preferredMode}</span>
-                            )}
-                            {inq.city && (
-                              <span>• 📍 {inq.city}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      <option value="nuovo">Nuovo</option>
+                      <option value="preventivo_inviato">Preventivo Inviato</option>
+                      <option value="confermato">Confermato</option>
+                      <option value="non_interessato">Non Interessato</option>
+                      <option value="archiviato">Archiviato</option>
+                    </select>
+                  </div>
 
-                      {inq.courseSlug && (
-                        <Link
-                          to={`/corsi/${inq.courseSlug}`}
-                          target="_blank"
-                          className="p-1.5 text-[#008e97] hover:text-[#00777f] hover:bg-white/80 rounded-lg transition-colors shrink-0"
-                          title="Vedi scheda corso"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Link>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {inq.clientType && (
+                      <span className="rounded-md border border-slate-200/80 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 shadow-2xs">
+                        {inq.clientType === "azienda" ? "Azienda" : "Privato"}
+                      </span>
+                    )}
+                    <span className="whitespace-nowrap font-mono text-[11px] text-slate-400" suppressHydrationWarning>
+                      {formatDate(inq.created_at)}
+                    </span>
+                  </div>
+                </div>
 
-                    {/* Messaggio cliente in anteprima se presente */}
-                    {inq.message && !isExpanded && (
-                      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs text-slate-600 italic line-clamp-2">
-                        "{inq.message}"
+                {/* 2. Chi e cosa chiede */}
+                <div className="space-y-2.5 p-3.5 sm:p-4">
+                  <div className="min-w-0">
+                    <h3 className="break-words text-base font-extrabold leading-snug tracking-tight text-slate-900">{inq.name}</h3>
+                    {inq.company && (
+                      <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs font-medium text-slate-600">
+                        <Building className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <span className="truncate">{inq.company}</span>
                       </div>
                     )}
                   </div>
 
-                  {/* 3. Barra Azioni Ergonomica Mobile: Touch Targets >= 42px */}
-                  <div className="px-3.5 sm:px-4 py-2.5 bg-slate-50/70 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                    {/* Contatti Rapidi 1-Click */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {whatsappLink && (
-                        <a
-                          href={whatsappLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95"
-                          title="Apri chat WhatsApp con messaggio precompilato"
-                        >
-                          <MessageCircle className="w-4 h-4 shrink-0" />
-                          <span>WhatsApp</span>
-                        </a>
-                      )}
-
-                      {inq.phone && (
-                        <a
-                          href={`tel:${formatCleanPhone(inq.phone)}`}
-                          className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl bg-[#008e97] hover:bg-[#00777f] active:bg-[#006e75] text-white font-bold text-xs shadow-xs transition-all active:scale-95"
-                          title={`Chiama ${inq.phone}`}
-                        >
-                          <Phone className="w-4 h-4 shrink-0" />
-                          <span>Chiama</span>
-                        </a>
-                      )}
-
-                      <a
-                        href={mailtoLink}
-                        className="inline-flex items-center justify-center min-w-[42px] min-h-[42px] p-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition-colors shadow-2xs"
-                        title={`Invia email a ${inq.email}`}
+                  <div
+                    className={`flex items-center justify-between gap-3 rounded-xl border p-2.5 text-slate-900 sm:p-3 ${
+                      isCourse ? "border-[#008e97]/25 bg-[#e6f6f7]/60" : "border-amber-200/60 bg-amber-50/60"
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white shadow-2xs ${
+                          isCourse ? "bg-[#008e97]" : "bg-[#f58220]"
+                        }`}
                       >
-                        <Mail className="w-4 h-4" />
-                      </a>
+                        {isCourse ? <GraduationCap className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="line-clamp-2 text-xs font-bold leading-snug sm:text-sm">
+                          {inq.courseTitle || inq.service_type || "Richiesta Consulenza"}
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
+                          {inq.participantsCount && (
+                            <span className="font-semibold text-slate-700">
+                              {inq.participantsCount} {inq.participantsCount === 1 ? "partecipante" : "partecipanti"}
+                            </span>
+                          )}
+                          {inq.editionLabel && <span className="font-semibold text-[#008e97]">• {inq.editionLabel}</span>}
+                          {inq.preferredMode && <span>• {inq.preferredMode}</span>}
+                          {inq.city && <span>• {inq.city}</span>}
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Azioni Gestione: Agenda, Elimina, Dettagli */}
-                    <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                    {inq.courseSlug && (
+                      <Link
+                        to={`/corsi/${inq.courseSlug}`}
+                        target="_blank"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[#008e97] transition-colors hover:bg-white/80 hover:text-[#00777f]"
+                        title="Vedi scheda corso"
+                        aria-label="Vedi scheda corso"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    )}
+                  </div>
+
+                  {inq.message && !isExpanded && (
+                    <div className="line-clamp-2 rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-xs italic text-slate-600">
+                      &ldquo;{inq.message}&rdquo;
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Azioni: contatto rapido in primo piano, il resto raccolto */}
+                <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/70 p-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+                  <div className="flex items-center gap-2">
+                    {whatsappLink && (
+                      <a
+                        href={whatsappLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-3.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-emerald-600 active:scale-95 active:bg-emerald-700 sm:flex-none"
+                        title="Apri chat WhatsApp con messaggio precompilato"
+                      >
+                        <MessageCircle className="h-4 w-4 shrink-0" />
+                        <span>WhatsApp</span>
+                      </a>
+                    )}
+
+                    {inq.phone && (
+                      <a
+                        href={`tel:${formatCleanPhone(inq.phone)}`}
+                        className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#008e97] px-3.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#00777f] active:scale-95 active:bg-[#006e75] sm:flex-none"
+                        title={`Chiama ${inq.phone}`}
+                      >
+                        <Phone className="h-4 w-4 shrink-0" />
+                        <span>Chiama</span>
+                      </a>
+                    )}
+
+                    <a
+                      href={mailtoLink}
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-2xs transition-colors hover:bg-slate-100"
+                      title={`Invia email a ${inq.email}`}
+                      aria-label={`Invia email a ${inq.email}`}
+                    >
+                      <Mail className="h-4 w-4" />
+                    </a>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(inq.id)}
+                      aria-expanded={isExpanded}
+                      className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-200 sm:min-h-10 sm:flex-none"
+                    >
+                      <span>{isExpanded ? "Meno dettagli" : "Dettagli"}</span>
+                      {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </button>
+
+                    {/* Mobile: altre azioni in un foglio */}
+                    <button
+                      type="button"
+                      onClick={() => setMenuFor(inq)}
+                      aria-label="Altre azioni"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100 sm:hidden"
+                    >
+                      <MoreHorizontal className="h-5 w-5" />
+                    </button>
+
+                    {/* Da tablet: azioni sempre visibili */}
+                    <div className="hidden items-center gap-1.5 sm:flex">
                       {onScheduleInquiry && (
                         <button
                           type="button"
                           onClick={() => onScheduleInquiry(inq)}
-                          className="inline-flex items-center justify-center min-w-[42px] min-h-[42px] p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 transition-colors"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-purple-200/80 bg-purple-50 text-purple-700 transition-colors hover:bg-purple-100"
                           title="Pianifica impegno in Agenda"
+                          aria-label="Pianifica impegno in Agenda"
                         >
-                          <CalendarPlus className="w-4 h-4" />
+                          <CalendarPlus className="h-4 w-4" />
                         </button>
                       )}
-
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmId(inq.id)}
-                        className="inline-flex items-center justify-center min-w-[42px] min-h-[42px] p-2.5 rounded-xl text-slate-400 hover:text-[#df0000] hover:bg-rose-50 transition-colors"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-rose-50 hover:text-[#df0000]"
                         title="Elimina richiesta"
+                        aria-label="Elimina richiesta"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => toggleExpand(inq.id)}
-                        className="inline-flex items-center justify-center gap-1 min-h-[42px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all ml-1"
-                        title="Visualizza o nascondi dettagli"
-                      >
-                        <span>{isExpanded ? "Meno" : "Dettagli"}</span>
-                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
+                </div>
 
-                  {/* CASSETTO DETTAGLI ESPANDIBILE (PROGRESSIVE DISCLOSURE) */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-slate-50/50 space-y-3 animate-in fade-in duration-150">
-                      {/* Recapiti Diretti */}
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 pb-2 border-b border-slate-200/60">
-                        {inq.phone && (
-                          <span className="flex items-center gap-1 font-mono">
-                            <Phone className="w-3.5 h-3.5 text-[#008e97]" />
-                            <strong>{inq.phone}</strong>
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1 font-mono">
-                          <Mail className="w-3.5 h-3.5 text-[#008e97]" />
-                          {inq.email}
+                {/* Dettagli espandibili */}
+                {isExpanded && (
+                  <div className="space-y-3 border-t border-slate-100 bg-slate-50/50 px-3.5 pb-4 pt-3 sm:px-4">
+                    <div className="flex flex-col gap-2 border-b border-slate-200/60 pb-3 text-xs text-slate-600 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-2">
+                      {inq.phone && (
+                        <a href={`tel:${formatCleanPhone(inq.phone)}`} className="flex items-center gap-1.5 font-mono">
+                          <Phone className="h-3.5 w-3.5 shrink-0 text-[#008e97]" />
+                          <strong>{inq.phone}</strong>
+                        </a>
+                      )}
+                      <a href={mailtoLink} className="flex min-w-0 items-center gap-1.5 font-mono">
+                        <Mail className="h-3.5 w-3.5 shrink-0 text-[#008e97]" />
+                        <span className="break-all">{inq.email}</span>
+                      </a>
+                      {inq.pec && (
+                        <span className="flex min-w-0 items-center gap-1.5 font-mono text-blue-700">
+                          <strong>PEC:</strong> <span className="break-all">{inq.pec}</span>
                         </span>
-                        {inq.pec && (
-                          <span className="flex items-center gap-1 font-mono text-blue-700">
-                            <strong>PEC:</strong> {inq.pec}
-                          </span>
-                        )}
-                        {inq.courseSlug && (
-                          <Link
-                            to={`/corsi/${inq.courseSlug}`}
-                            target="_blank"
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#008e97] hover:underline"
-                          >
-                            <span>Scheda Corso Online</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </Link>
-                        )}
-                        {onScheduleInquiry && (
+                      )}
+                      {inq.courseSlug && (
+                        <Link
+                          to={`/corsi/${inq.courseSlug}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-[#008e97] hover:underline"
+                        >
+                          <span>Scheda Corso Online</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      )}
+                    </div>
+
+                    {inq.editionLabel && (
+                      <div className="rounded-xl border border-[#008e97]/30 bg-[#e6f6f7] p-3 text-xs text-slate-800">
+                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#008e97]">Data richiesta dal cliente:</div>
+                        <p className="font-semibold">{inq.editionLabel}</p>
+                      </div>
+                    )}
+
+                    {inq.message && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Messaggio allegato:</div>
+                        <p className="whitespace-pre-wrap break-words italic leading-relaxed">&ldquo;{inq.message}&rdquo;</p>
+                      </div>
+                    )}
+
+                    {hasFiscalData && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs">
+                        <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Anagrafica &amp; Dati per Fatturazione Elettronica
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-[11px] sm:grid-cols-4">
+                          {inq.fiscalCode && (
+                            <div className="min-w-0">
+                              <span className="block text-[9px] uppercase text-slate-400">Codice Fiscale</span>
+                              <span className="break-all font-mono font-bold text-slate-900 select-all">{inq.fiscalCode}</span>
+                            </div>
+                          )}
+                          {inq.vatNumber && (
+                            <div className="min-w-0">
+                              <span className="block text-[9px] uppercase text-slate-400">Partita IVA</span>
+                              <span className="break-all font-mono font-bold text-slate-900 select-all">{inq.vatNumber}</span>
+                            </div>
+                          )}
+                          {inq.sdiCode && (
+                            <div className="min-w-0">
+                              <span className="block text-[9px] uppercase text-slate-400">Codice SDI</span>
+                              <span className="break-all font-mono font-bold text-slate-900 select-all">{inq.sdiCode}</span>
+                            </div>
+                          )}
+                          {inq.atecoCode && (
+                            <div className="min-w-0">
+                              <span className="block text-[9px] uppercase text-slate-400">Codice ATECO</span>
+                              <span className="break-all font-mono text-slate-800">{inq.atecoCode}</span>
+                            </div>
+                          )}
+                          {inq.address && (
+                            <div className="col-span-2 min-w-0">
+                              <span className="block text-[9px] uppercase text-slate-400">Indirizzo / Sede</span>
+                              <span className="break-words text-slate-800">{inq.address} {inq.city}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Note interne */}
+                    <div className="pt-1">
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Appunti Interni</span>
+                        {editingNoteId !== inq.id && (
                           <button
                             type="button"
-                            onClick={() => onScheduleInquiry(inq)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-100/70 hover:bg-purple-200 text-purple-800 text-xs font-bold transition-all ml-auto"
+                            onClick={() => handleStartEditingNote(inq)}
+                            className="inline-flex min-h-9 items-center gap-1 px-1 text-[11px] font-bold text-[#008e97] hover:underline"
                           >
-                            <CalendarPlus className="w-3.5 h-3.5" />
-                            <span>Pianifica in Agenda</span>
+                            <Edit3 className="h-3 w-3" />
+                            <span>{inq.notes ? "Modifica note" : "Aggiungi note"}</span>
                           </button>
                         )}
                       </div>
 
-                      {/* Data del corso scelta dal cliente */}
-                      {inq.editionLabel && (
-                        <div className="p-3 rounded-xl bg-[#e6f6f7] border border-[#008e97]/30 text-xs text-slate-800">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#008e97] mb-1">
-                            Data richiesta dal cliente:
-                          </div>
-                          <p className="font-semibold">{inq.editionLabel}</p>
-                        </div>
-                      )}
-
-                      {/* Messaggio del cliente se presente */}
-                      {inq.message && (
-                        <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-700">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                            Messaggio allegato:
-                          </div>
-                          <p className="italic leading-relaxed whitespace-pre-wrap">
-                            "{inq.message}"
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Dati Fiscali e Anagrafici (Solo se inseriti dal cliente) */}
-                      {hasFiscalData && (
-                        <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                            Anagrafica & Dati per Fatturazione Elettronica
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                            {inq.fiscalCode && (
-                              <div>
-                                <span className="text-slate-400 block text-[9px] uppercase">Codice Fiscale</span>
-                                <span className="font-mono font-bold text-slate-900 select-all">{inq.fiscalCode}</span>
-                              </div>
-                            )}
-                            {inq.vatNumber && (
-                              <div>
-                                <span className="text-slate-400 block text-[9px] uppercase">Partita IVA</span>
-                                <span className="font-mono font-bold text-slate-900 select-all">{inq.vatNumber}</span>
-                              </div>
-                            )}
-                            {inq.sdiCode && (
-                              <div>
-                                <span className="text-slate-400 block text-[9px] uppercase">Codice SDI</span>
-                                <span className="font-mono font-bold text-slate-900 select-all">{inq.sdiCode}</span>
-                              </div>
-                            )}
-                            {inq.atecoCode && (
-                              <div>
-                                <span className="text-slate-400 block text-[9px] uppercase">Codice ATECO</span>
-                                <span className="font-mono text-slate-800">{inq.atecoCode}</span>
-                              </div>
-                            )}
-                            {inq.address && (
-                              <div className="col-span-2">
-                                <span className="text-slate-400 block text-[9px] uppercase">Indirizzo / Sede</span>
-                                <span className="text-slate-800">{inq.address} {inq.city}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Note Interne Operative */}
-                      <div className="pt-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                            Appunti Interni
-                          </span>
-                          {editingNoteId !== inq.id && (
+                      {editingNoteId === inq.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={noteDraft}
+                            onChange={(e) => setNoteDraft(e.target.value)}
+                            placeholder="es. Chiamato il 18/09: interessato ad aula Porto Torres per 3 persone..."
+                            rows={3}
+                            autoFocus
+                            className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+                          />
+                          <div className="flex items-center justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => handleStartEditingNote(inq)}
-                              className="text-[11px] text-[#008e97] hover:underline font-bold inline-flex items-center gap-1"
+                              onClick={handleCancelNote}
+                              className="min-h-11 rounded-xl px-4 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 sm:min-h-10"
                             >
-                              <Edit3 className="w-3 h-3" />
-                              <span>{inq.notes ? "Modifica Note" : "+ Aggiungi Note"}</span>
+                              Annulla
                             </button>
-                          )}
+                            <button
+                              type="button"
+                              onClick={() => handleSaveNote(inq.id, inq.status)}
+                              className="min-h-11 rounded-xl bg-[#008e97] px-5 text-xs font-bold text-white hover:bg-[#00777f] sm:min-h-10"
+                            >
+                              Salva nota
+                            </button>
+                          </div>
                         </div>
-
-                        {editingNoteId === inq.id ? (
-                          <div className="space-y-2">
-                            <textarea
-                              value={noteDraft}
-                              onChange={(e) => setNoteDraft(e.target.value)}
-                              placeholder="es. Chiamato il 18/09: interessato ad aula Porto Torres per 3 persone..."
-                              rows={2}
-                              className="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
-                            />
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={handleCancelNote}
-                                className="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-800"
-                              >
-                                Annulla
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSaveNote(inq.id, inq.status)}
-                                className="px-3 py-1 bg-[#008e97] text-white text-xs font-bold rounded-lg hover:bg-[#00777f]"
-                              >
-                                Salva Nota
-                              </button>
-                            </div>
-                          </div>
-                        ) : inq.notes ? (
-                          <div className="p-2 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs text-slate-700 italic">
-                            {inq.notes}
-                          </div>
-                        ) : null}
-                      </div>
+                      ) : inq.notes ? (
+                        <div className="whitespace-pre-wrap break-words rounded-xl border border-amber-200/60 bg-amber-50/60 p-2.5 text-xs italic text-slate-700">
+                          {inq.notes}
+                        </div>
+                      ) : null}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-200">
-            <div className="w-12 h-12 rounded-2xl bg-[#fdf2f2] text-[#df0000] flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-6 h-6" />
-            </div>
-
-            <h4 className="text-base font-bold text-slate-900 text-center mb-1">
-              Elimina Richiesta
-            </h4>
-            <p className="text-xs text-slate-600 text-center mb-6">
-              Sei sicuro di voler eliminare questa richiesta dal registro? L'operazione non è reversibile.
-            </p>
-
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider hover:bg-slate-200"
-              >
-                Annulla
-              </button>
-              <button
-                onClick={() => {
-                  onDeleteInquiry(deleteConfirmId);
-                  setDeleteConfirmId(null);
-                }}
-                className="px-5 py-2.5 rounded-xl bg-[#df0000] hover:bg-[#b80000] text-white text-xs font-bold uppercase tracking-wider shadow-xs"
-              >
-                Elimina Definitivamente
-              </button>
-            </div>
-          </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
+
+      {/* Altre azioni (mobile) */}
+      <AdminModal
+        open={Boolean(menuFor)}
+        onClose={() => setMenuFor(null)}
+        title={menuFor?.name ?? ""}
+        subtitle={menuFor?.courseTitle || menuFor?.service_type || "Richiesta di contatto"}
+        size="sm"
+        bodyClassName="p-3"
+      >
+        {menuFor && (
+          <ul className="space-y-1">
+            {onScheduleInquiry && (
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = menuFor;
+                    setMenuFor(null);
+                    onScheduleInquiry(target);
+                  }}
+                  className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50 active:bg-slate-100"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-50 text-purple-700">
+                    <CalendarPlus className="h-5 w-5" />
+                  </span>
+                  Pianifica in Agenda
+                </button>
+              </li>
+            )}
+            {menuFor.courseSlug && (
+              <li>
+                <Link
+                  to={`/corsi/${menuFor.courseSlug}`}
+                  target="_blank"
+                  onClick={() => setMenuFor(null)}
+                  className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50 active:bg-slate-100"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e6f6f7] text-[#008e97]">
+                    <ExternalLink className="h-5 w-5" />
+                  </span>
+                  Vedi scheda del corso
+                </Link>
+              </li>
+            )}
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  const id = menuFor.id;
+                  setMenuFor(null);
+                  setDeleteConfirmId(id);
+                }}
+                className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold text-[#df0000] transition-colors hover:bg-rose-50 active:bg-rose-100"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fdf2f2]">
+                  <Trash2 className="h-5 w-5" />
+                </span>
+                Elimina richiesta
+              </button>
+            </li>
+          </ul>
+        )}
+      </AdminModal>
+
+      <ConfirmDialog
+        open={Boolean(deleteConfirmId)}
+        title="Eliminare la richiesta?"
+        confirmLabel="Elimina definitivamente"
+        onConfirm={() => {
+          if (deleteConfirmId) onDeleteInquiry(deleteConfirmId);
+          setDeleteConfirmId(null);
+        }}
+        onCancel={() => setDeleteConfirmId(null)}
+      >
+        La richiesta verrà rimossa dal registro. L&apos;operazione non è reversibile.
+      </ConfirmDialog>
     </div>
   );
 }
-

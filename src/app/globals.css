@@ -227,6 +227,47 @@
     animation-delay: calc(var(--i, 0) * 45ms + 250ms);
   }
 
+  /* Admin: modali a pannello (sheet su mobile, finestra al centro da tablet in su) */
+  .adm-backdrop {
+    animation: adm-fade 0.2s ease both;
+  }
+  .adm-panel {
+    animation: adm-sheet 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  @media (min-width: 640px) {
+    .adm-panel {
+      animation-name: adm-pop;
+    }
+  }
+  @keyframes adm-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes adm-sheet {
+    from { transform: translateY(100%); }
+    to { transform: none; }
+  }
+  @keyframes adm-pop {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .adm-backdrop, .adm-panel { animation: none; }
+  }
+
+  /* Admin su schermi piccoli: campi a 16px (iOS non ingrandisce la pagina al focus) e altezza da dito */
+  @media (max-width: 1023px) {
+    .adm-root input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .adm-root select,
+    .adm-root textarea {
+      font-size: 16px;
+    }
+    .adm-root input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .adm-root select {
+      min-height: 2.75rem;
+    }
+  }
+
   /* Nascondi scrollbar cross-browser */
   .no-scrollbar::-webkit-scrollbar,
   .scrollbar-none::-webkit-scrollbar {

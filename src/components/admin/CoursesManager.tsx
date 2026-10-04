@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import Link from "@/components/ui/Link";
 import type { Category, Course } from "@/lib/types/database";
@@ -12,6 +14,10 @@ import {
   upcomingEditions,
 } from "@/lib/courses/format";
 import { slugify } from "@/lib/utils/slug";
+import AdminModal from "@/components/admin/ui/AdminModal";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import SectionHeader from "@/components/admin/ui/SectionHeader";
+import { btnOutline, btnPrimary, btnSecondary, btnTeal } from "@/components/admin/ui/styles";
 import { compressImage, formatBytes } from "@/lib/images/compress";
 import {
   BookOpen,
@@ -38,8 +44,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
-  AlertTriangle,
-  Flame,
+  SlidersHorizontal,
+  MoreHorizontal,
 } from "lucide-react";
 
 export const COURSE_IMAGE_PRESETS = [
@@ -75,6 +81,34 @@ export const COURSE_IMAGE_PRESETS = [
     label: "Ufficio & VDT",
     url: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80",
   },
+];
+
+type StatusFilter = "all" | "open" | "featured" | "in_person" | "draft";
+
+/** Filtri per stato: colori da "acceso" (selezionato) e "spento". */
+const STATUS_CHIPS: {
+  id: StatusFilter;
+  label: string;
+  stat: "openEnrollment" | "featured" | "drafts" | "inPerson" | null;
+  on: string;
+  off: string;
+  countOff: string;
+  dot?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+}[] = [
+  { id: "all", label: "Tutti", stat: null, on: "bg-slate-900 text-white", off: "bg-slate-50 text-slate-600 border-slate-200/60", countOff: "bg-slate-200/70 text-slate-600" },
+  { id: "open", label: "Iscrizioni aperte", stat: "openEnrollment", on: "bg-emerald-600 text-white", off: "bg-emerald-50 text-emerald-800 border-emerald-200/60", countOff: "bg-emerald-200/60 text-emerald-800", dot: "bg-emerald-500" },
+  { id: "featured", label: "In evidenza", stat: "featured", on: "bg-[#f58220] text-white", off: "bg-amber-50 text-amber-800 border-amber-200/60", countOff: "bg-amber-200/60 text-amber-800", icon: Sparkles },
+  { id: "in_person", label: "In presenza", stat: "inPerson", on: "bg-[#008e97] text-white", off: "bg-cyan-50 text-cyan-800 border-cyan-200/60", countOff: "bg-cyan-200/60 text-cyan-800", icon: MapPin },
+  { id: "draft", label: "Bozze", stat: "drafts", on: "bg-slate-700 text-white", off: "bg-slate-50 text-slate-600 border-slate-200/60", countOff: "bg-slate-200/70 text-slate-600" },
+];
+
+/** Passaggi della procedura guidata (colori propri di ciascun passaggio). */
+const WIZARD_STEPS = [
+  { n: 1, title: "Base", sub: "Titolo & Categoria", active: "border-[#008e97]/30 bg-[#e6f6f7] text-[#008e97]", badge: "bg-[#008e97]" },
+  { n: 2, title: "Sede & Ore", sub: "Modalità & Posti", active: "border-[#f58220]/40 bg-[#fff4ea] text-[#f58220]", badge: "bg-[#f58220]" },
+  { n: 3, title: "Didattica", sub: "Programma & Test", active: "border-red-200 bg-red-50 text-[#df0000]", badge: "bg-[#df0000]" },
+  { n: 4, title: "Media & Pubblica", sub: "Foto & Visibilità", active: "border-[#008e97]/40 bg-[#e6f6f7] text-[#008e97]", badge: "bg-[#008e97]" },
 ];
 
 interface CoursesManagerProps {
@@ -153,7 +187,7 @@ export default function CoursesManager({
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tutti");
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "featured" | "in_person" | "draft">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   // Modal & Wizard state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -162,6 +196,8 @@ export default function CoursesManager({
   const [isQuickAddCatOpen, setIsQuickAddCatOpen] = useState(false);
   const [quickNewCat, setQuickNewCat] = useState("");
   const [deleteConfirmCourse, setDeleteConfirmCourse] = useState<Course | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [menuCourse, setMenuCourse] = useState<Course | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -286,6 +322,13 @@ export default function CoursesManager({
       return true;
     });
   }, [courses, selectedCategory, statusFilter, searchQuery]);
+
+  const hasActiveFilters = Boolean(searchQuery) || selectedCategory !== "Tutti" || statusFilter !== "all";
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("Tutti");
+    setStatusFilter("all");
+  };
 
   // Open Add Course Modal
   const handleOpenAddModal = () => {
@@ -430,9 +473,25 @@ export default function CoursesManager({
     setCurrentStep((prev) => Math.max(1, prev - 1));
   };
 
+  const closeWizard = () => setIsModalOpen(false);
+
+  // Si può saltare a un passaggio solo se quelli prima sono compilati correttamente
+  const goToStep = (target: number) => {
+    for (let step = 1; step < target; step++) {
+      if (!validateStep(step)) return;
+    }
+    setCurrentStep(target);
+  };
+
   // Final Form Submission
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Invio da tastiera nei primi passaggi = "Avanti" (non deve salvare il corso a metà compilazione)
+    if (currentStep < 4) {
+      handleNextStep();
+      return;
+    }
 
     if (!courseForm.title.trim()) {
       setCurrentStep(1);
@@ -504,228 +563,234 @@ export default function CoursesManager({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* 1. UNIFIED SECTION HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[#e6f6f7] border border-[#008e97]/20 flex items-center justify-center text-[#008e97] shrink-0 shadow-2xs">
-            <BookOpen className="w-5 h-5 stroke-[2.2]" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                Corsi di Formazione
-              </h2>
-              <span className="text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200/80 px-2.5 py-0.5 rounded-full">
-                {courses.length} corsi
-              </span>
+    <div className="space-y-4 sm:space-y-6">
+      <SectionHeader
+        icon={<BookOpen className="h-5 w-5 stroke-[2.2]" />}
+        title="Corsi di Formazione"
+        count={`${courses.length} corsi`}
+        description="Gestisci l'offerta formativa, requisiti normativi, edizioni in programma e iscrizioni aperte."
+        actions={
+          <>
+            {/* La tabella ha senso solo su schermi larghi: su mobile i corsi sono sempre in elenco compatto */}
+            <div className="hidden items-center rounded-xl border border-slate-200/80 bg-slate-100 p-1 md:flex">
+              {(
+                [
+                  { id: "grid", label: "Griglia", icon: LayoutGrid, title: "Visualizzazione a griglia (Schede)" },
+                  { id: "table", label: "Tabella", icon: List, title: "Visualizzazione a tabella elenco" },
+                ] as const
+              ).map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  onClick={() => setViewMode(view.id)}
+                  title={view.title}
+                  aria-pressed={viewMode === view.id}
+                  className={`flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all ${
+                    viewMode === view.id ? "border border-slate-200 bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <view.icon className="h-3.5 w-3.5 text-[#008e97]" />
+                  <span>{view.label}</span>
+                </button>
+              ))}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Gestisci l'offerta formativa, requisiti normativi, edizioni in programma e iscrizioni aperte.
-            </p>
-          </div>
-        </div>
 
-        {/* Top Actions: View mode switcher + Nuovo Corso CTA */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                viewMode === "grid"
-                  ? "bg-white text-slate-900 shadow-xs border border-slate-200"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-              title="Visualizzazione a griglia (Schede)"
-            >
-              <LayoutGrid className="w-3.5 h-3.5 text-[#008e97]" />
-              <span className="hidden sm:inline">Griglia</span>
+            <button type="button" onClick={handleOpenAddModal} className={btnPrimary}>
+              <Plus className="h-4 w-4" />
+              <span>Nuovo Corso</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("table")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                viewMode === "table"
-                  ? "bg-white text-slate-900 shadow-xs border border-slate-200"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-              title="Visualizzazione a tabella elenco"
-            >
-              <List className="w-3.5 h-3.5 text-[#008e97]" />
-              <span className="hidden sm:inline">Tabella</span>
-            </button>
-          </div>
+          </>
+        }
+      />
 
-          <button
-            type="button"
-            onClick={handleOpenAddModal}
-            className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-[#df0000] hover:bg-[#b80000] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow-md transition-all shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nuovo Corso</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. INTEGRATED CONTROLS & FILTER BAR */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        {/* Left: Filter Pills with Live Metric Counts */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <button
-            onClick={() => setStatusFilter("all")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "all"
-                ? "bg-slate-900 text-white shadow-xs"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60"
-            }`}
-          >
-            <span>Tutti</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "all" ? "bg-white/20 text-white" : "bg-slate-200/70 text-slate-600"
-              }`}
-            >
-              {courses.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter("open")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "open"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/60"
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span>Iscrizioni Aperte</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "open" ? "bg-white/20 text-white" : "bg-emerald-200/60 text-emerald-800"
-              }`}
-            >
-              {stats.openEnrollment}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter("featured")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "featured"
-                ? "bg-[#f58220] text-white shadow-xs"
-                : "bg-amber-50 hover:bg-amber-100/80 text-amber-800 border border-amber-200/60"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span>In Evidenza</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "featured" ? "bg-white/20 text-white" : "bg-amber-200/60 text-amber-800"
-              }`}
-            >
-              {stats.featured}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter("in_person")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "in_person"
-                ? "bg-[#008e97] text-white shadow-xs"
-                : "bg-cyan-50 hover:bg-cyan-100/80 text-cyan-800 border border-cyan-200/60"
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span>In Presenza</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "in_person" ? "bg-white/20 text-white" : "bg-cyan-200/60 text-cyan-800"
-              }`}
-            >
-              {stats.inPerson}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter("draft")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              statusFilter === "draft"
-                ? "bg-slate-700 text-white shadow-xs"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60"
-            }`}
-          >
-            <span>Bozze</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-md font-semibold ${
-                statusFilter === "draft" ? "bg-white/20 text-white" : "bg-slate-200/70 text-slate-600"
-              }`}
-            >
-              {stats.drafts}
-            </span>
-          </button>
-
-          {(searchQuery || selectedCategory !== "Tutti" || statusFilter !== "all") && (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory("Tutti");
-                setStatusFilter("all");
-              }}
-              className="text-[11px] text-[#df0000] hover:underline font-bold px-2 py-1 shrink-0"
-            >
-              Azzera filtri
-            </button>
-          )}
-        </div>
-
-        {/* Right: Search Input + Category Select + Categorie Shortcut */}
-        <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-          <div className="relative flex-1 sm:w-60">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* BARRA STRUMENTI: su mobile ricerca + filtri, sotto gli stati a scorrimento orizzontale */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2 lg:order-2 lg:shrink-0">
+          <div className="relative min-w-0 flex-1 lg:w-64 lg:flex-none">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
+              type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cerca corso, normativa, sede..."
-              className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97] focus:bg-white transition-all font-medium"
+              placeholder="Cerca corso, sede..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-10 text-xs font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#008e97] [&::-webkit-search-cancel-button]:hidden"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                aria-label="Cancella la ricerca"
+                className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
 
+          {/* Desktop: categoria e scorciatoia alle categorie sempre visibili */}
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97] cursor-pointer"
+            aria-label="Categoria"
+            className="hidden cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97] lg:block"
           >
             <option value="Tutti">Tutte le Categorie ({courses.length})</option>
-            {categories.map((cat) => {
-              const count = courses.filter((c) => c.category_id === cat.id).length;
-              return (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name} ({count})
-                </option>
-              );
-            })}
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name} ({courses.filter((c) => c.category_id === cat.id).length})
+              </option>
+            ))}
           </select>
 
           <button
             type="button"
             onClick={onNavigateToCategories}
-            className="p-2 bg-slate-50 hover:bg-[#e6f6f7] hover:text-[#008e97] border border-slate-200 rounded-xl text-slate-600 transition-colors shrink-0"
+            className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:bg-[#e6f6f7] hover:text-[#008e97] lg:flex"
             title="Gestisci o riordina categorie didattiche"
+            aria-label="Gestisci le categorie"
           >
-            <Tag className="w-4 h-4" />
+            <Tag className="h-4 w-4" />
+          </button>
+
+          {/* Mobile: tutto il resto dei filtri in un foglio */}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            aria-label="Altri filtri"
+            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 transition-colors hover:bg-slate-100 lg:hidden"
+          >
+            <SlidersHorizontal className="h-5 w-5" />
+            {selectedCategory !== "Tutti" && (
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#df0000] text-[10px] font-bold text-white">
+                1
+              </span>
+            )}
           </button>
         </div>
+
+        <div className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 no-scrollbar lg:order-1 lg:mx-0 lg:px-0">
+          {STATUS_CHIPS.map((chip) => {
+            const selected = statusFilter === chip.id;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                onClick={() => setStatusFilter(chip.id)}
+                aria-pressed={selected}
+                className={`flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-xs font-bold transition-colors ${
+                  selected ? `${chip.on} border-transparent shadow-xs` : `${chip.off} hover:brightness-95`
+                }`}
+              >
+                {chip.dot && <span className={`h-2 w-2 shrink-0 rounded-full ${selected ? "bg-white" : chip.dot}`} />}
+                {chip.icon && <chip.icon className="h-3.5 w-3.5 shrink-0" />}
+                <span>{chip.label}</span>
+                <span className={`rounded-md px-1.5 text-[11px] font-semibold leading-5 ${selected ? "bg-white/20 text-white" : chip.countOff}`}>
+                  {chip.stat ? stats[chip.stat] : courses.length}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {hasActiveFilters && (
+        <div className="flex items-center justify-between gap-3 px-1 text-xs text-slate-500">
+          <span>
+            <strong className="font-bold text-slate-700">{filteredCourses.length}</strong> di {courses.length} corsi
+          </span>
+          <button type="button" onClick={resetFilters} className="min-h-9 px-2 font-bold text-[#df0000] hover:underline">
+            Azzera filtri
+          </button>
+        </div>
+      )}
+
+      {/* ELENCO COMPATTO (mobile): un corso per riga, con i due interruttori di uso quotidiano a portata di pollice */}
+      {filteredCourses.length > 0 && (
+        <div className="space-y-3 md:hidden">
+          {filteredCourses.map((course) => {
+            const next = upcomingEditions(course.editions)[0];
+            return (
+              <article key={course.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => handleOpenEditModal(course)}
+                  className="flex w-full items-start gap-3 p-3 text-left transition-colors active:bg-slate-50"
+                >
+                  <img
+                    src={course.image_url || COURSE_IMAGE_PRESETS[0].url}
+                    alt=""
+                    className="h-[72px] w-[72px] shrink-0 rounded-xl border border-slate-200 object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-1">
+                      <span className="max-w-full truncate rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                        {course.category.name}
+                      </span>
+                      {course.is_featured && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                          <Sparkles className="h-3 w-3" />
+                          In evidenza
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900">{course.title}</h4>
+                    <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[11px] text-slate-600">
+                      <Calendar className={`h-3.5 w-3.5 shrink-0 ${next ? "text-[#df0000]" : "text-amber-600"}`} />
+                      {next ? (
+                        <span className="truncate font-semibold">
+                          {formatEditionDates(next, { short: true })}
+                          {next.location && normalizeMode(course.mode) !== "online" ? ` · ${next.location}` : ""}
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-amber-700">Nessuna data in programma</span>
+                      )}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-slate-400">
+                      {course.duration_hours}h · {modeLabel(course.mode)}
+                    </div>
+                  </div>
+                  <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-300" />
+                </button>
+
+                <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50 px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => runAction(() => onToggleCourse(course.id, { is_published: !course.is_published }))}
+                    aria-pressed={course.is_published}
+                    className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-colors ${
+                      course.is_published ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    <span className={`h-2 w-2 rounded-full ${course.is_published ? "bg-emerald-600" : "bg-amber-500"}`} />
+                    {course.is_published ? "Online" : "Bozza"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      runAction(() => onToggleCourse(course.id, { is_open_for_enrollment: !course.is_open_for_enrollment }))
+                    }
+                    aria-pressed={course.is_open_for_enrollment}
+                    className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-colors ${
+                      course.is_open_for_enrollment ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    <span className={`h-2 w-2 rounded-full ${course.is_open_for_enrollment ? "bg-emerald-600" : "bg-slate-400"}`} />
+                    {course.is_open_for_enrollment ? "Iscrizioni aperte" : "Iscrizioni chiuse"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMenuCourse(course)}
+                    aria-label={`Altre azioni per ${course.title}`}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100"
+                  >
+                    <MoreHorizontal className="h-5 w-5" />
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       {/* 3. COURSES LISTING: GRID VIEW OR TABLE VIEW */}
       {filteredCourses.length === 0 ? (
@@ -749,7 +814,7 @@ export default function CoursesManager({
         /* =================================================================== */
         /* GRID / CARDS VIEW */
         /* =================================================================== */
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="hidden md:grid md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCourses.map((course) => (
             <div
               key={course.id}
@@ -908,7 +973,7 @@ export default function CoursesManager({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => runAction(() => onDuplicateCourse(course.id), "Corso duplicato come bozza.")}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                     title="Duplica come bozza"
                   >
                     <Copy className="w-4 h-4" />
@@ -916,7 +981,7 @@ export default function CoursesManager({
 
                   <button
                     onClick={() => handleOpenEditModal(course)}
-                    className="p-1.5 text-slate-500 hover:text-[#008e97] hover:bg-[#e6f6f7] rounded-lg transition-colors"
+                    className="p-2.5 text-slate-500 hover:text-[#008e97] hover:bg-[#e6f6f7] rounded-lg transition-colors"
                     title="Modifica corso"
                   >
                     <Edit2 className="w-4 h-4" />
@@ -924,7 +989,7 @@ export default function CoursesManager({
 
                   <button
                     onClick={() => setDeleteConfirmCourse(course)}
-                    className="p-1.5 text-slate-400 hover:text-[#df0000] hover:bg-[#fdf2f2] rounded-lg transition-colors"
+                    className="p-2.5 text-slate-400 hover:text-[#df0000] hover:bg-[#fdf2f2] rounded-lg transition-colors"
                     title="Elimina corso"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -938,7 +1003,7 @@ export default function CoursesManager({
         /* =================================================================== */
         /* TABLE VIEW */
         /* =================================================================== */
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
@@ -1077,7 +1142,7 @@ export default function CoursesManager({
 
                         <button
                           onClick={() => handleOpenEditModal(course)}
-                          className="p-1.5 text-slate-500 hover:text-[#008e97] hover:bg-[#e6f6f7] rounded-lg transition-colors"
+                          className="p-2.5 text-slate-500 hover:text-[#008e97] hover:bg-[#e6f6f7] rounded-lg transition-colors"
                           title="Modifica corso"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -1085,7 +1150,7 @@ export default function CoursesManager({
 
                         <button
                           onClick={() => setDeleteConfirmCourse(course)}
-                          className="p-1.5 text-slate-400 hover:text-[#df0000] hover:bg-[#fdf2f2] rounded-lg transition-colors"
+                          className="p-2.5 text-slate-400 hover:text-[#df0000] hover:bg-[#fdf2f2] rounded-lg transition-colors"
                           title="Elimina corso"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1101,157 +1166,89 @@ export default function CoursesManager({
       )}
 
       {/* ===================================================================== */}
-      {/* 4. MULTI-STEP COURSE CREATION & EDITING WIZARD MODAL */}
+      {/* PROCEDURA GUIDATA: CREAZIONE E MODIFICA DEL CORSO */}
       {/* ===================================================================== */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-6 max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#008e97] text-white flex items-center justify-center shadow-xs">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    {editingCourse ? "Modifica Corso di Formazione" : "Aggiungi Nuovo Corso"}
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Passo {currentStep} di 4 • Compila i dati richiesti per pubblicare l'offerta formativa
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <AdminModal
+        open={isModalOpen}
+        onClose={closeWizard}
+        title={editingCourse ? "Modifica Corso" : "Nuovo Corso"}
+        subtitle={`Passo ${currentStep} di 4 · ${WIZARD_STEPS[currentStep - 1].title}`}
+        icon={<BookOpen className="h-5 w-5" />}
+        size="xl"
+        stripe
+        fixedHeight
+        dismissOnBackdrop={false}
+        header={
+          <div className="shrink-0 border-b border-slate-100 bg-white px-4 py-3 sm:px-6">
+            <div className="grid grid-cols-4 gap-2">
+              {WIZARD_STEPS.map((step) => {
+                const isCurrent = currentStep === step.n;
+                const isDone = currentStep > step.n;
+                return (
+                  <button
+                    key={step.n}
+                    type="button"
+                    onClick={() => goToStep(step.n)}
+                    aria-current={isCurrent ? "step" : undefined}
+                    className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border p-2 text-left transition-all sm:justify-start ${
+                      isCurrent
+                        ? step.active
+                        : isDone
+                          ? "border-transparent bg-slate-50 text-slate-700 hover:bg-slate-100"
+                          : "border-transparent text-slate-400 opacity-60"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                        isCurrent ? `${step.badge} text-white` : isDone ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {isDone ? <Check className="h-3.5 w-3.5" /> : step.n}
+                    </span>
+                    <span className="hidden min-w-0 sm:block">
+                      <span className="block truncate text-[11px] font-bold uppercase tracking-wider">{step.title}</span>
+                      <span className="block truncate text-[10px] text-slate-500">{step.sub}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+          </div>
+        }
+        footer={
+          <div className="flex items-center gap-2 sm:justify-between">
+            <button type="button" onClick={closeWizard} className={`${btnSecondary} ${currentStep > 1 ? "hidden sm:inline-flex" : ""}`}>
+              Annulla
+            </button>
 
-            {/* Step Progress Stepper */}
-            <div className="px-6 py-3.5 bg-white border-b border-slate-200 shrink-0">
-              <div className="grid grid-cols-4 gap-2">
-                {/* Step 1 */}
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(1)}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${
-                    currentStep === 1
-                      ? "bg-[#e6f6f7] border border-[#008e97]/30 text-[#008e97]"
-                      : currentStep > 1
-                      ? "bg-slate-50 hover:bg-slate-100 text-slate-700"
-                      : "opacity-60 text-slate-400"
-                  }`}
-                >
-                  <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                      currentStep === 1
-                        ? "bg-[#008e97] text-white"
-                        : currentStep > 1
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {currentStep > 1 ? <Check className="w-3.5 h-3.5" /> : "1"}
-                  </div>
-                  <div className="hidden sm:block truncate">
-                    <div className="text-[11px] font-bold uppercase tracking-wider">Base</div>
-                    <div className="text-[10px] text-slate-500 truncate">Titolo & Categoria</div>
-                  </div>
+            <div className="flex flex-1 items-center gap-2 sm:flex-none">
+              {currentStep > 1 && (
+                <button type="button" onClick={handlePrevStep} className={btnOutline}>
+                  <ChevronLeft className="h-4 w-4" />
+                  <span>Indietro</span>
                 </button>
+              )}
 
-                {/* Step 2 */}
-                <button
-                  type="button"
-                  onClick={() => validateStep(1) && setCurrentStep(2)}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${
-                    currentStep === 2
-                      ? "bg-[#fff4ea] border border-[#f58220]/40 text-[#f58220]"
-                      : currentStep > 2
-                      ? "bg-slate-50 hover:bg-slate-100 text-slate-700"
-                      : "opacity-60 text-slate-400"
-                  }`}
-                >
-                  <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                      currentStep === 2
-                        ? "bg-[#f58220] text-white"
-                        : currentStep > 2
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {currentStep > 2 ? <Check className="w-3.5 h-3.5" /> : "2"}
-                  </div>
-                  <div className="hidden sm:block truncate">
-                    <div className="text-[11px] font-bold uppercase tracking-wider">Sede & Ore</div>
-                    <div className="text-[10px] text-slate-500 truncate">Modalità & Posti</div>
-                  </div>
+              {currentStep < 4 ? (
+                <button type="button" onClick={handleNextStep} className={`${btnTeal} flex-1 sm:flex-none`}>
+                  <span>Avanti</span>
+                  <ChevronRight className="h-4 w-4" />
                 </button>
-
-                {/* Step 3 */}
-                <button
-                  type="button"
-                  onClick={() => validateStep(1) && validateStep(2) && setCurrentStep(3)}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${
-                    currentStep === 3
-                      ? "bg-red-50 border border-red-200 text-[#df0000]"
-                      : currentStep > 3
-                      ? "bg-slate-50 hover:bg-slate-100 text-slate-700"
-                      : "opacity-60 text-slate-400"
-                  }`}
-                >
-                  <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                      currentStep === 3
-                        ? "bg-[#df0000] text-white"
-                        : currentStep > 3
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {currentStep > 3 ? <Check className="w-3.5 h-3.5" /> : "3"}
-                  </div>
-                  <div className="hidden sm:block truncate">
-                    <div className="text-[11px] font-bold uppercase tracking-wider">Didattica</div>
-                    <div className="text-[10px] text-slate-500 truncate">Programma & Test</div>
-                  </div>
+              ) : (
+                <button type="submit" form="course-form" disabled={isSaving} className={`${btnPrimary} flex-1 sm:flex-none`}>
+                  <Check className="h-4 w-4" />
+                  <span>{isSaving ? "Salvataggio..." : editingCourse ? "Salva Modifiche" : "Salva Corso"}</span>
                 </button>
-
-                {/* Step 4 */}
-                <button
-                  type="button"
-                  onClick={() => validateStep(1) && validateStep(2) && validateStep(3) && setCurrentStep(4)}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${
-                    currentStep === 4
-                      ? "bg-[#e6f6f7] border border-[#008e97]/40 text-[#008e97]"
-                      : "opacity-60 text-slate-400"
-                  }`}
-                >
-                  <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                      currentStep === 4 ? "bg-[#008e97] text-white" : "bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    4
-                  </div>
-                  <div className="hidden sm:block truncate">
-                    <div className="text-[11px] font-bold uppercase tracking-wider">Media & Pubblica</div>
-                    <div className="text-[10px] text-slate-500 truncate">Foto & Visibilità</div>
-                  </div>
-                </button>
-              </div>
+              )}
             </div>
-
-            {/* Modal Body: Content per Step */}
-            <form onSubmit={handleSubmitForm} className="p-6 overflow-y-auto flex-grow space-y-5">
+          </div>
+        }
+      >
+        <form id="course-form" onSubmit={handleSubmitForm} className="space-y-5">
               {/* STEP 1: DATI BASE & NORMATIVA */}
               {currentStep === 1 && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-200">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <div className="hidden sm:flex items-center gap-2 pb-2 border-b border-slate-100">
                     <Info className="w-4 h-4 text-[#008e97]" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                       Step 1: Informazioni Principali e Riconoscimento Normativo
@@ -1281,7 +1278,7 @@ export default function CoursesManager({
                           onClick={() => {
                             setCourseForm({ ...courseForm, slug: slugify(courseForm.title) });
                           }}
-                          className="text-[10px] text-[#008e97] hover:underline font-semibold"
+                          className="min-h-10 px-1 text-[11px] text-[#008e97] hover:underline font-semibold"
                         >
                           Genera automatico da Titolo
                         </button>
@@ -1303,10 +1300,10 @@ export default function CoursesManager({
                         <button
                           type="button"
                           onClick={() => setIsQuickAddCatOpen(!isQuickAddCatOpen)}
-                          className="text-[10px] text-[#008e97] hover:underline font-semibold flex items-center gap-1"
+                          className="min-h-10 px-1 text-[11px] text-[#008e97] hover:underline font-semibold flex items-center gap-1"
                         >
                           <Plus className="w-3 h-3" />
-                          <span>{isQuickAddCatOpen ? "Chiudi" : "+ Nuova Categoria"}</span>
+                          <span>{isQuickAddCatOpen ? "Chiudi" : "Nuova categoria"}</span>
                         </button>
                       </div>
 
@@ -1335,7 +1332,7 @@ export default function CoursesManager({
                           <button
                             type="button"
                             onClick={handleQuickAddCategory}
-                            className="px-3 py-1 bg-[#008e97] text-white text-xs font-bold rounded-lg shrink-0"
+                            className="min-h-10 px-3.5 bg-[#008e97] text-white text-xs font-bold rounded-lg shrink-0"
                           >
                             Salva
                           </button>
@@ -1376,7 +1373,7 @@ export default function CoursesManager({
               {/* STEP 2: MODALITÀ, DATE & SEDI */}
               {currentStep === 2 && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-200">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <div className="hidden sm:flex items-center gap-2 pb-2 border-b border-slate-100">
                     <Clock className="w-4 h-4 text-[#f58220]" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                       Step 2: Modalità, Durata, Date e Sedi
@@ -1409,7 +1406,7 @@ export default function CoursesManager({
                       />
                     </div>
 
-                    <div>
+                    <div className="col-span-2 sm:col-span-1">
                       <label className="block text-xs font-semibold text-slate-800 mb-1">Modalità Didattica *</label>
                       <select
                         value={courseForm.mode}
@@ -1443,7 +1440,7 @@ export default function CoursesManager({
                       <button
                         type="button"
                         onClick={addEditionRow}
-                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold shrink-0"
+                        className="inline-flex min-h-11 items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold shrink-0 sm:min-h-10"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Aggiungi data</span>
@@ -1466,7 +1463,7 @@ export default function CoursesManager({
                       const isPast = Boolean(row.start_date) && !isUpcoming({ start_date: row.start_date, end_date: row.end_date || null });
                       return (
                         <div key={row.key} className="grid grid-cols-12 gap-2 p-3 bg-white border border-slate-200 rounded-xl">
-                          <div className="col-span-12 sm:col-span-3">
+                          <div className="col-span-6 sm:col-span-3">
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Dal *</label>
                             <input
                               type="date"
@@ -1475,7 +1472,7 @@ export default function CoursesManager({
                               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
                             />
                           </div>
-                          <div className="col-span-12 sm:col-span-3">
+                          <div className="col-span-6 sm:col-span-3">
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Al (se più giorni)</label>
                             <input
                               type="date"
@@ -1504,8 +1501,9 @@ export default function CoursesManager({
                             <button
                               type="button"
                               onClick={() => removeEditionRow(row.key)}
-                              className="p-2 rounded-lg text-slate-400 hover:text-[#df0000] hover:bg-[#fdf2f2] transition-colors"
+                              className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:text-[#df0000] hover:bg-[#fdf2f2] transition-colors sm:h-10 sm:w-10"
                               title={`Elimina la data ${index + 1}`}
+                              aria-label={`Elimina la data ${index + 1}`}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1549,7 +1547,7 @@ export default function CoursesManager({
               {/* STEP 3: PROGRAMMA DIDATTICO */}
               {currentStep === 3 && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-200">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <div className="hidden sm:flex items-center gap-2 pb-2 border-b border-slate-100">
                     <FileText className="w-4 h-4 text-[#df0000]" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                       Step 3: Sintesi e Programma Didattico Dettagliato
@@ -1599,7 +1597,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                           }));
                           showToast("Template D.Lgs. 81/08 inserito con successo!");
                         }}
-                        className="text-[10px] text-[#008e97] hover:underline font-semibold"
+                        className="min-h-10 px-1 text-[11px] text-[#008e97] hover:underline font-semibold"
                       >
                         Applica Template Didattico Standard D.Lgs. 81/08
                       </button>
@@ -1619,7 +1617,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
               {/* STEP 4: IMMAGINE & PUBBLICAZIONE */}
               {currentStep === 4 && (
                 <div className="space-y-5 animate-in fade-in slide-in-from-right-3 duration-200">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <div className="hidden sm:flex items-center gap-2 pb-2 border-b border-slate-100">
                     <Sparkles className="w-4 h-4 text-[#008e97]" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                       Step 4: Immagine di Copertina & Opzioni di Visibilità
@@ -1652,10 +1650,10 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-xs"
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-colors shadow-xs sm:min-h-10 sm:w-auto"
                         >
                           <Upload className="w-3.5 h-3.5 text-[#008e97]" />
-                          <span>Carica Foto dal Computer</span>
+                          <span>Carica foto dal dispositivo</span>
                         </button>
                         <p className="mt-1.5 text-[11px] text-slate-500">
                           {imageInfo ||
@@ -1674,7 +1672,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                               key={p.label}
                               type="button"
                               onClick={() => setImageUrl(p.url)}
-                              className={`text-[10px] p-2 rounded-xl text-left border transition-all truncate ${
+                              className={`text-[11px] min-h-11 px-2.5 py-2 rounded-xl text-left border transition-all truncate ${
                                 courseForm.image_url === p.url
                                   ? "bg-[#e6f6f7] border-[#008e97] text-[#008e97] font-bold"
                                   : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
@@ -1751,7 +1749,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                           type="checkbox"
                           checked={courseForm.is_published}
                           onChange={(e) => setCourseForm({ ...courseForm, is_published: e.target.checked })}
-                          className="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-0"
+                          className="mt-0.5 w-5 h-5 shrink-0 text-emerald-600 rounded focus:ring-0"
                         />
                         <div>
                           <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
@@ -1769,7 +1767,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                           type="checkbox"
                           checked={courseForm.is_featured}
                           onChange={(e) => setCourseForm({ ...courseForm, is_featured: e.target.checked })}
-                          className="mt-0.5 w-4 h-4 text-amber-500 rounded focus:ring-0"
+                          className="mt-0.5 w-5 h-5 shrink-0 text-amber-500 rounded focus:ring-0"
                         />
                         <div>
                           <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
@@ -1787,7 +1785,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                           type="checkbox"
                           checked={courseForm.is_open_for_enrollment}
                           onChange={(e) => setCourseForm({ ...courseForm, is_open_for_enrollment: e.target.checked })}
-                          className="mt-0.5 w-4 h-4 text-emerald-600 rounded focus:ring-0"
+                          className="mt-0.5 w-5 h-5 shrink-0 text-emerald-600 rounded focus:ring-0"
                         />
                         <div>
                           <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
@@ -1803,101 +1801,161 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                   </div>
                 </div>
               )}
+        </form>
+      </AdminModal>
 
-              {/* Wizard Footer Navigation Controls */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-200 shrink-0">
+      {/* Filtri aggiuntivi (mobile) */}
+      <AdminModal
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        title="Filtri"
+        subtitle={`${filteredCourses.length} ${filteredCourses.length === 1 ? "corso" : "corsi"} corrispondenti`}
+        size="sm"
+        footer={
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("Tutti")}
+              disabled={selectedCategory === "Tutti"}
+              className={`${btnSecondary} flex-1`}
+            >
+              Azzera
+            </button>
+            <button type="button" onClick={() => setFiltersOpen(false)} className={`${btnTeal} flex-[2]`}>
+              Mostra {filteredCourses.length} {filteredCourses.length === 1 ? "corso" : "corsi"}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="course-category-filter" className="mb-1.5 block text-xs font-semibold text-slate-700">
+              Categoria
+            </label>
+            <select
+              id="course-category-filter"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
+            >
+              <option value="Tutti">Tutte le categorie ({courses.length})</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name} ({courses.filter((c) => c.category_id === cat.id).length})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setFiltersOpen(false);
+              onNavigateToCategories();
+            }}
+            className={`${btnOutline} w-full normal-case tracking-normal`}
+          >
+            <Tag className="h-4 w-4 text-[#008e97]" />
+            <span>Gestisci le categorie</span>
+          </button>
+        </div>
+      </AdminModal>
+
+      {/* Altre azioni su un corso (mobile) */}
+      <AdminModal
+        open={Boolean(menuCourse)}
+        onClose={() => setMenuCourse(null)}
+        title={menuCourse?.title ?? ""}
+        subtitle={menuCourse?.category.name}
+        size="sm"
+        bodyClassName="p-3"
+      >
+        {menuCourse && (
+          <ul className="space-y-1">
+            {[
+              {
+                label: "Modifica corso",
+                icon: Edit2,
+                tone: "bg-[#e6f6f7] text-[#008e97]",
+                onClick: () => handleOpenEditModal(menuCourse),
+              },
+              {
+                label: menuCourse.is_featured ? "Rimuovi da In evidenza" : "Metti in evidenza",
+                icon: Sparkles,
+                tone: "bg-amber-50 text-amber-600",
+                onClick: () => runAction(() => onToggleCourse(menuCourse.id, { is_featured: !menuCourse.is_featured })),
+              },
+              {
+                label: "Duplica come bozza",
+                icon: Copy,
+                tone: "bg-indigo-50 text-indigo-600",
+                onClick: () => runAction(() => onDuplicateCourse(menuCourse.id), "Corso duplicato come bozza."),
+              },
+            ].map((action) => (
+              <li key={action.label}>
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors"
+                  onClick={() => {
+                    setMenuCourse(null);
+                    action.onClick();
+                  }}
+                  className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50 active:bg-slate-100"
                 >
-                  Annulla
+                  <span className={`flex h-10 w-10 items-center justify-center rounded-full ${action.tone}`}>
+                    <action.icon className="h-5 w-5" />
+                  </span>
+                  {action.label}
                 </button>
-
-                <div className="flex items-center gap-2">
-                  {currentStep > 1 && (
-                    <button
-                      type="button"
-                      onClick={handlePrevStep}
-                      className="px-4 py-2.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      <span>Indietro</span>
-                    </button>
-                  )}
-
-                  {currentStep < 4 ? (
-                    <button
-                      type="button"
-                      onClick={handleNextStep}
-                      className="px-5 py-2.5 bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
-                    >
-                      <span>Avanti</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="px-6 py-2.5 disabled:opacity-50 bg-[#df0000] hover:bg-[#b80000] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs hover:shadow-md transition-all flex items-center gap-2"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>{isSaving ? "Salvataggio..." : editingCourse ? "Salva Modifiche" : "Salva Corso"}</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================== */}
-      {/* 5. DELETE CONFIRMATION DIALOG */}
-      {/* ===================================================================== */}
-      {deleteConfirmCourse && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 rounded-2xl bg-red-100 border border-red-200 text-[#df0000] flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-7 h-7" />
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Eliminare questo corso?</h3>
-              <p className="text-xs text-slate-500 mt-1.5">
-                Stai per eliminare definitivamente il corso:
-              </p>
-              <div className="p-3 mt-2 bg-slate-50 rounded-xl border border-slate-200 text-xs font-bold text-slate-800">
-                {deleteConfirmCourse.title}
-              </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                Questa operazione rimuoverà la scheda pubblica e le informazioni associate.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmCourse(null)}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors"
+              </li>
+            ))}
+            <li>
+              <Link
+                to={`/corsi/${menuCourse.slug}`}
+                target="_blank"
+                onClick={() => setMenuCourse(null)}
+                className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50 active:bg-slate-100"
               >
-                Annulla
-              </button>
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <ExternalLink className="h-5 w-5" />
+                </span>
+                Vedi scheda pubblica
+              </Link>
+            </li>
+            <li>
               <button
                 type="button"
                 onClick={() => {
-                  const target = deleteConfirmCourse;
-                  runAction(() => onDeleteCourse(target.id), `Corso "${target.title}" eliminato.`);
-                  setDeleteConfirmCourse(null);
+                  const target = menuCourse;
+                  setMenuCourse(null);
+                  setDeleteConfirmCourse(target);
                 }}
-                className="px-5 py-2.5 bg-[#df0000] hover:bg-[#b80000] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-colors"
+                className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold text-[#df0000] transition-colors hover:bg-rose-50 active:bg-rose-100"
               >
-                Sì, Elimina
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fdf2f2]">
+                  <Trash2 className="h-5 w-5" />
+                </span>
+                Elimina corso
               </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </li>
+          </ul>
+        )}
+      </AdminModal>
+
+      <ConfirmDialog
+        open={Boolean(deleteConfirmCourse)}
+        title="Eliminare questo corso?"
+        confirmLabel="Sì, elimina"
+        onConfirm={() => {
+          const target = deleteConfirmCourse;
+          if (!target) return;
+          runAction(() => onDeleteCourse(target.id), `Corso "${target.title}" eliminato.`);
+          setDeleteConfirmCourse(null);
+        }}
+        onCancel={() => setDeleteConfirmCourse(null)}
+      >
+        Stai per eliminare definitivamente <strong>&ldquo;{deleteConfirmCourse?.title}&rdquo;</strong>. Verranno rimosse la scheda
+        pubblica e le informazioni associate.
+      </ConfirmDialog>
     </div>
   );
 }

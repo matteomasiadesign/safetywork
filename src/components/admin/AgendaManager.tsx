@@ -36,7 +36,9 @@ import {
 import { AgendaEvent, AgendaEventType, AgendaEventStatus, Course, Inquiry } from "@/lib/types/database";
 import type { AgendaEventInput } from "@/context/AdminDataContext";
 import { buildIcs } from "@/lib/utils/ics";
-import BrandStripe from "@/components/ui/BrandStripe";
+import AdminModal from "@/components/admin/ui/AdminModal";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import { btnOutline, btnSecondary, btnTeal } from "@/components/admin/ui/styles";
 
 type ViewMode = "month" | "week" | "day" | "year" | "list";
 
@@ -161,6 +163,9 @@ export default function AgendaManager({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  // Su mobile la ricerca sta chiusa finché non serve
+  const [showSearch, setShowSearch] = useState(false);
+  const filtersActive = Boolean(searchTerm.trim()) || filterType !== "all" || filterStatus !== "all";
 
   // 4. MODALI E DETTAGLI
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -217,6 +222,15 @@ export default function AgendaManager({
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
 
+  const toDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  const shiftSelectedDay = (delta: number) => {
+    const [y, m, day] = selectedDate.split("-").map(Number);
+    const d = new Date(y, m - 1, day + delta);
+    setSelectedDate(toDateStr(d));
+    setCurrentDate(d);
+  };
+
   // Reset a oggi
   const handleGoToday = () => {
     const today = new Date();
@@ -226,6 +240,7 @@ export default function AgendaManager({
 
   // Navigazione Prev / Next in base alla vista
   const handlePrev = () => {
+    if (viewMode === "day") return shiftSelectedDay(-1);
     const d = new Date(currentDate);
     if (viewMode === "year") {
       d.setFullYear(d.getFullYear() - 1);
@@ -233,13 +248,12 @@ export default function AgendaManager({
       d.setMonth(d.getMonth() - 1);
     } else if (viewMode === "week") {
       d.setDate(d.getDate() - 7);
-    } else if (viewMode === "day") {
-      d.setDate(d.getDate() - 1);
     }
     setCurrentDate(d);
   };
 
   const handleNext = () => {
+    if (viewMode === "day") return shiftSelectedDay(1);
     const d = new Date(currentDate);
     if (viewMode === "year") {
       d.setFullYear(d.getFullYear() + 1);
@@ -247,8 +261,6 @@ export default function AgendaManager({
       d.setMonth(d.getMonth() + 1);
     } else if (viewMode === "week") {
       d.setDate(d.getDate() + 7);
-    } else if (viewMode === "day") {
-      d.setDate(d.getDate() + 1);
     }
     setCurrentDate(d);
   };
@@ -563,45 +575,66 @@ export default function AgendaManager({
     return days;
   }, [currentDate]);
 
+  const SHORT_MONTHS = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+  const periodLabel = (() => {
+    if (viewMode === "year") return String(currentYear);
+    if (viewMode === "list") return "Tutti gli impegni";
+    if (viewMode === "day") {
+      const [y, m, day] = selectedDate.split("-").map(Number);
+      return `${day} ${MONTH_NAMES_IT[m - 1]} ${y}`;
+    }
+    if (viewMode === "week") {
+      const first = weekDays[0].date;
+      const last = weekDays[6].date;
+      return `${first.getDate()} ${SHORT_MONTHS[first.getMonth()]} – ${last.getDate()} ${SHORT_MONTHS[last.getMonth()]} ${last.getFullYear()}`;
+    }
+    return `${MONTH_NAMES_IT[currentMonth]} ${currentYear}`;
+  })();
+
   return (
-    <div className="space-y-4 select-none animate-in fade-in duration-300">
+    <div className="space-y-4">
       {/* =========================================================================
-          TOOLBAR UNIFICATA RESPONSIVA (Mobile-First & Anti-Sovraffollamento)
+          BARRA STRUMENTI: navigazione nel tempo, viste e ricerca (su mobile la ricerca si apre a richiesta)
           ========================================================================= */}
-      <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
-        {/* RIGA 1: Navigatore Temporale Rapido + Azioni Nuovo & Export */}
-        <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-          {/* Sinistra: Controlli Temporali Prev/Oggi/Next + Mese/Anno */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+      <div className="space-y-2.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs sm:p-3.5">
+        {/* Riga 1: periodo + nuovo impegno */}
+        <div className="flex items-center gap-2">
+          {viewMode !== "list" && (
+            <div className="flex shrink-0 items-center rounded-xl border border-slate-200 bg-slate-100 p-0.5">
               <button
                 type="button"
                 onClick={handlePrev}
-                className="p-1.5 sm:p-2 hover:bg-white active:bg-slate-200 text-slate-700 rounded-lg transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-all hover:bg-white active:bg-slate-200"
                 title="Periodo precedente"
                 aria-label="Periodo precedente"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 onClick={handleGoToday}
-                className="px-2 sm:px-2.5 py-1 text-xs font-bold text-slate-800 hover:bg-white active:bg-slate-200 rounded-lg transition-all"
+                className="h-10 rounded-lg px-2.5 text-xs font-bold text-slate-800 transition-all hover:bg-white active:bg-slate-200"
               >
                 Oggi
               </button>
               <button
                 type="button"
                 onClick={handleNext}
-                className="p-1.5 sm:p-2 hover:bg-white active:bg-slate-200 text-slate-700 rounded-lg transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-all hover:bg-white active:bg-slate-200"
                 title="Periodo successivo"
                 aria-label="Periodo successivo"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
+          )}
 
-            <div className="flex items-center gap-1">
+          {/* Mobile: il periodo mostrato, a colpo d'occhio */}
+          <div className="min-w-0 flex-1 truncate text-sm font-extrabold tracking-tight text-slate-900 sm:hidden">{periodLabel}</div>
+
+          {/* Da tablet: scelta rapida di mese e anno (o titolo del periodo) */}
+          {(viewMode === "month" || viewMode === "week") && (
+            <div className="hidden items-center gap-1 sm:flex">
               <select
                 value={currentMonth}
                 onChange={(e) => {
@@ -609,7 +642,8 @@ export default function AgendaManager({
                   d.setMonth(Number(e.target.value));
                   setCurrentDate(d);
                 }}
-                className="px-2 sm:px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97] cursor-pointer"
+                aria-label="Mese"
+                className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
               >
                 {MONTH_NAMES_IT.map((m, idx) => (
                   <option key={idx} value={idx}>
@@ -625,7 +659,8 @@ export default function AgendaManager({
                   d.setFullYear(Number(e.target.value));
                   setCurrentDate(d);
                 }}
-                className="px-2 sm:px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97] cursor-pointer"
+                aria-label="Anno"
+                className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
               >
                 {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
                   <option key={y} value={y}>
@@ -634,99 +669,116 @@ export default function AgendaManager({
                 ))}
               </select>
             </div>
+          )}
+          {(viewMode === "day" || viewMode === "year") && (
+            <div className="hidden text-sm font-extrabold tracking-tight text-slate-900 sm:block">{periodLabel}</div>
+          )}
 
-            <span className="text-[10px] font-extrabold uppercase tracking-wider bg-[#e6f6f7] text-[#008e97] px-2 py-0.5 rounded-full border border-[#008e97]/20 hidden md:inline">
-              {filteredEvents.length} impegni
-            </span>
-          </div>
+          <span className="hidden rounded-full border border-[#008e97]/20 bg-[#e6f6f7] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#008e97] md:inline">
+            {filteredEvents.length} impegni
+          </span>
 
-          {/* Destra: Esporta .ICS + Nuovo Impegno */}
-          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-            <button
-              type="button"
-              onClick={handleExportIcs}
-              className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition-colors shadow-2xs"
-              title="Esporta calendario .ICS"
-              aria-label="Esporta calendario .ICS"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => openAddModal()}
-              className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-[#008e97] hover:bg-[#00777f] active:bg-[#006e75] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-xs shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nuovo</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => openAddModal()}
+            aria-label="Nuovo impegno"
+            className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#008e97] text-xs font-bold uppercase tracking-wider text-white shadow-xs transition-all hover:bg-[#00777f] active:bg-[#006e75] sm:h-10 sm:w-auto sm:px-3.5"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Nuovo</span>
+          </button>
         </div>
 
-        {/* RIGA 2: Selettore Viste a Scorrimento + Ricerca & Filtro */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
-          {/* Selettore Viste compatto orizzontale */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 overflow-x-auto no-scrollbar shrink-0">
+        {/* Riga 2: viste (5 voci a larghezza uguale: nessuno scorrimento) + interruttore ricerca su mobile */}
+        <div className="flex items-center gap-2">
+          <div className="grid min-w-0 flex-1 grid-cols-5 gap-0.5 rounded-xl border border-slate-200 bg-slate-100 p-0.5 sm:flex-none sm:grid-cols-[repeat(5,auto)]">
             {(
               [
-                { id: "month", label: "Mese" },
-                { id: "week", label: "Settimana" },
-                { id: "day", label: "Giorno" },
-                { id: "year", label: "Anno" },
-                { id: "list", label: "Elenco" },
+                { id: "month", label: "Mese", short: "Mese" },
+                { id: "week", label: "Settimana", short: "Sett." },
+                { id: "day", label: "Giorno", short: "Giorno" },
+                { id: "year", label: "Anno", short: "Anno" },
+                { id: "list", label: "Elenco", short: "Elenco" },
               ] as const
             ).map((v) => (
               <button
                 key={v.id}
                 type="button"
                 onClick={() => setViewMode(v.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                  viewMode === v.id
-                    ? "bg-white text-slate-900 shadow-xs"
-                    : "text-slate-500 hover:text-slate-900"
+                aria-pressed={viewMode === v.id}
+                className={`min-h-10 whitespace-nowrap rounded-lg px-1 text-xs font-bold transition-all sm:px-4 ${
+                  viewMode === v.id ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
                 }`}
               >
-                {v.label}
+                <span className="sm:hidden">{v.short}</span>
+                <span className="hidden sm:inline">{v.label}</span>
               </button>
             ))}
           </div>
 
-          {/* Ricerca e Filtro Tipologia con larghezza flessibile */}
-          <div className="flex items-center gap-2 flex-1">
-            <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Cerca impegno, cliente, sede..."
-                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
+          <button
+            type="button"
+            onClick={() => setShowSearch((v) => !v)}
+            aria-expanded={showSearch || filtersActive}
+            aria-label="Cerca, filtra ed esporta"
+            className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors sm:hidden ${
+              showSearch || filtersActive
+                ? "border-[#008e97]/40 bg-[#e6f6f7] text-[#008e97]"
+                : "border-slate-200 bg-slate-50 text-slate-600"
+            }`}
+          >
+            <Search className="h-4 w-4" />
+            {filtersActive && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#df0000]" />}
+          </button>
+        </div>
 
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97] shrink-0"
-            >
-              <option value="all">Tutti i tipi</option>
-              <option value="corso">🎓 Corsi</option>
-              <option value="sopralluogo">🔍 Sopralluoghi</option>
-              <option value="scadenza">🚨 Scadenze</option>
-              <option value="consulenza">💼 Consulenze</option>
-              <option value="appuntamento">📞 Incontri</option>
-              <option value="altro">✍️ Altro</option>
-            </select>
+        {/* Riga 3: ricerca, tipologia ed esportazione (sempre visibili da tablet, a richiesta su mobile) */}
+        <div className={`${showSearch || filtersActive ? "flex" : "hidden"} items-center gap-2 border-t border-slate-100 pt-2.5 sm:flex`}>
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cerca impegno..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-10 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#008e97] [&::-webkit-search-cancel-button]:hidden"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                aria-label="Cancella la ricerca"
+                className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
+
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            aria-label="Tipologia"
+            className="w-28 shrink-0 cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008e97] sm:w-auto"
+          >
+            <option value="all">Tutti i tipi</option>
+            <option value="corso">Corsi</option>
+            <option value="sopralluogo">Sopralluoghi</option>
+            <option value="scadenza">Scadenze</option>
+            <option value="consulenza">Consulenze</option>
+            <option value="appuntamento">Incontri</option>
+            <option value="altro">Altro</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={handleExportIcs}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 shadow-2xs transition-colors hover:bg-slate-100 sm:h-10 sm:w-10"
+            title="Esporta calendario .ICS"
+            aria-label="Esporta calendario .ICS"
+          >
+            <Download className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -748,7 +800,7 @@ export default function AgendaManager({
             </div>
 
             {/* Griglia Giorni Mese */}
-            <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-slate-100">
+            <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-slate-100 select-none">
               {monthCalendarCells.map((cell, idx) => {
                 const dayEvents = eventsByDate[cell.dateStr] || [];
                 const isSelected = selectedDate === cell.dateStr;
@@ -891,7 +943,7 @@ export default function AgendaManager({
               <button
                 type="button"
                 onClick={() => openAddModal(selectedDate)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#008e97] text-white text-xs font-bold rounded-xl shadow-2xs hover:bg-[#00777f] active:bg-[#006e75]"
+                className="inline-flex min-h-11 items-center gap-1 px-3.5 bg-[#008e97] text-white text-xs font-bold rounded-xl shadow-2xs hover:bg-[#00777f] active:bg-[#006e75]"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Aggiungi</span>
@@ -905,7 +957,7 @@ export default function AgendaManager({
                 <button
                   type="button"
                   onClick={() => openAddModal(selectedDate)}
-                  className="mt-2 text-[#008e97] font-bold hover:underline inline-flex items-center gap-1"
+                  className="mt-2 min-h-11 px-3 text-[#008e97] font-bold hover:underline inline-flex items-center gap-1"
                 >
                   <Plus className="w-3 h-3" />
                   <span>Crea un nuovo impegno</span>
@@ -954,7 +1006,82 @@ export default function AgendaManager({
 
       {/* -------------------- VISTA SETTIMANA (CON SCROLL ORIZZONTALE MOBILE) -------------------- */}
       {viewMode === "week" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <>
+          {/* Mobile: un blocco per giorno, in colonna (niente scorrimento orizzontale) */}
+          <div className="space-y-2.5 sm:hidden">
+            {weekDays.map((wd) => {
+              const dayEvents = eventsByDate[wd.dateStr] || [];
+              return (
+                <section
+                  key={wd.dateStr}
+                  className={`overflow-hidden rounded-2xl border bg-white shadow-xs ${
+                    wd.isToday ? "border-[#008e97]/50 ring-1 ring-[#008e97]/20" : "border-slate-200"
+                  }`}
+                >
+                  <header className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-3 py-2">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`flex h-11 w-11 flex-col items-center justify-center rounded-xl ${
+                          wd.isToday ? "bg-[#008e97] text-white" : "bg-white text-slate-900 ring-1 ring-slate-200"
+                        }`}
+                      >
+                        <span className="text-[9px] font-bold uppercase leading-none opacity-80">{wd.dayName}</span>
+                        <span className="mt-0.5 text-base font-black leading-none">{wd.dayNumber}</span>
+                      </span>
+                      <span className="text-xs font-semibold text-slate-600">
+                        {dayEvents.length === 0
+                          ? "Nessun impegno"
+                          : `${dayEvents.length} ${dayEvents.length === 1 ? "impegno" : "impegni"}`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openAddModal(wd.dateStr)}
+                      aria-label={`Aggiungi un impegno per il ${wd.dayName} ${wd.dayNumber}`}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl text-[#008e97] transition-colors hover:bg-[#e6f6f7] active:bg-[#d3eff1]"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </header>
+
+                  {dayEvents.length > 0 && (
+                    <div className="space-y-2 p-2.5">
+                      {dayEvents.map((evt) => {
+                        const cfg = getEventTypeConfig(evt.type, evt.customType);
+                        return (
+                          <button
+                            key={evt.id}
+                            type="button"
+                            onClick={() => setSelectedEventForDetail(evt)}
+                            className={`block w-full space-y-1 rounded-xl border p-3 text-left transition-colors active:brightness-95 ${cfg.border} ${cfg.bg}`}
+                          >
+                            <div className="flex items-center justify-between gap-2 text-[11px] font-bold">
+                              <span className="font-mono text-slate-700">
+                                {evt.startTime} - {evt.endTime}
+                              </span>
+                              <span className={`rounded px-1.5 py-0.5 text-[9px] uppercase ${STATUS_CONFIG[evt.status].badge}`}>
+                                {STATUS_CONFIG[evt.status].label}
+                              </span>
+                            </div>
+                            <h5 className={`text-sm font-bold leading-snug ${cfg.text}`}>{evt.title}</h5>
+                            {evt.location && (
+                              <div className="flex min-w-0 items-center gap-1 text-[11px] text-slate-500">
+                                <MapPin className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{evt.location}</span>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+
+
+        <div className="hidden sm:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto no-scrollbar">
             <div className="min-w-[680px]">
               <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 divide-x divide-slate-200 text-center">
@@ -1035,27 +1162,28 @@ export default function AgendaManager({
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* -------------------- VISTA GIORNO -------------------- */}
       {viewMode === "day" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-3 pb-4 mb-4 sm:mb-6 border-b border-slate-100">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-[#008e97]">
                 Dettaglio Giornaliero
               </span>
-              <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-                {currentDate.getDate()} {MONTH_NAMES_IT[currentMonth]} {currentYear}
+              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+                {formatItalianDate(selectedDate)}
               </h3>
             </div>
             <button
               type="button"
               onClick={() => openAddModal(selectedDate)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#008e97] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#00777f]"
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 px-4 bg-[#008e97] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#00777f]"
             >
               <Plus className="w-4 h-4" />
-              <span>Aggiungi per Oggi</span>
+              <span>Aggiungi</span>
             </button>
           </div>
 
@@ -1083,14 +1211,14 @@ export default function AgendaManager({
                 return (
                   <div
                     key={evt.id}
-                    className={`p-5 rounded-2xl border ${cfg.border} bg-white shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4`}
+                    className={`p-4 sm:p-5 rounded-2xl border ${cfg.border} bg-white shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4`}
                   >
                     <div className="flex items-start gap-3.5">
                       <div className={`w-11 h-11 rounded-xl ${cfg.bg} ${cfg.text} flex items-center justify-center shrink-0`}>
                         <IconComponent className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
                             {cfg.label}
                           </span>
@@ -1131,7 +1259,7 @@ export default function AgendaManager({
                       <button
                         type="button"
                         onClick={() => openEditModal(evt)}
-                        className="p-2 text-slate-600 hover:text-[#008e97] hover:bg-[#e6f6f7] rounded-xl border border-slate-200 transition-colors"
+                        className="p-3 sm:p-2 text-slate-600 hover:text-[#008e97] hover:bg-[#e6f6f7] rounded-xl border border-slate-200 transition-colors"
                         title="Modifica"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -1139,7 +1267,7 @@ export default function AgendaManager({
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmId(evt.id)}
-                        className="p-2 text-slate-600 hover:text-[#df0000] hover:bg-[#fdf2f2] rounded-xl border border-slate-200 transition-colors"
+                        className="p-3 sm:p-2 text-slate-600 hover:text-[#df0000] hover:bg-[#fdf2f2] rounded-xl border border-slate-200 transition-colors"
                         title="Elimina"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1155,8 +1283,8 @@ export default function AgendaManager({
 
       {/* -------------------- VISTA ANNO -------------------- */}
       {viewMode === "year" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6 pb-4 border-b border-slate-100">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-[#008e97]">
                 Panoramica Annuale
@@ -1165,12 +1293,12 @@ export default function AgendaManager({
                 Anno {currentYear}
               </h3>
             </div>
-            <span className="text-xs text-slate-500 font-semibold">
+            <span className="hidden sm:inline text-xs text-slate-500 font-semibold">
               Clicca su un mese per accedere direttamente alla vista mensile
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
             {MONTH_NAMES_IT.map((mName, mIdx) => {
               const daysInThisMonth = new Date(currentYear, mIdx + 1, 0).getDate();
               let monthEventsCount = 0;
@@ -1188,7 +1316,7 @@ export default function AgendaManager({
                     setCurrentDate(d);
                     setViewMode("month");
                   }}
-                  className="p-4 rounded-2xl border border-slate-200 hover:border-[#008e97] bg-slate-50/50 hover:bg-white hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                  className="p-3 sm:p-4 rounded-2xl border border-slate-200 hover:border-[#008e97] bg-slate-50/50 hover:bg-white hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-base font-bold text-slate-900 group-hover:text-[#008e97] transition-colors">
@@ -1225,11 +1353,11 @@ export default function AgendaManager({
       {/* -------------------- VISTA LISTA / ELENCO -------------------- */}
       {viewMode === "list" && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between gap-3">
             <h4 className="text-sm font-bold text-slate-800">
               Tutti gli impegni in ordine cronologico ({filteredEvents.length})
             </h4>
-            <span className="text-xs text-slate-500">
+            <span className="hidden sm:inline text-xs text-slate-500">
               Aggiornato in tempo reale
             </span>
           </div>
@@ -1257,7 +1385,7 @@ export default function AgendaManager({
                           <IconComponent className="w-5 h-5" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className="text-xs font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
                               {evt.startDate}
                             </span>
@@ -1298,7 +1426,7 @@ export default function AgendaManager({
                         <button
                           type="button"
                           onClick={() => openEditModal(evt)}
-                          className="p-2 text-slate-600 hover:text-[#008e97] hover:bg-[#e6f6f7] rounded-xl border border-slate-200 transition-colors"
+                          className="p-3 sm:p-2 text-slate-600 hover:text-[#008e97] hover:bg-[#e6f6f7] rounded-xl border border-slate-200 transition-colors"
                           title="Modifica"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -1306,7 +1434,7 @@ export default function AgendaManager({
                         <button
                           type="button"
                           onClick={() => setDeleteConfirmId(evt.id)}
-                          className="p-2 text-slate-600 hover:text-[#df0000] hover:bg-[#fdf2f2] rounded-xl border border-slate-200 transition-colors"
+                          className="p-3 sm:p-2 text-slate-600 hover:text-[#df0000] hover:bg-[#fdf2f2] rounded-xl border border-slate-200 transition-colors"
                           title="Elimina"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1321,52 +1449,57 @@ export default function AgendaManager({
       )}
 
       {/* =========================================================================
-          5. MODALE: PANORAMICA COMPLETA DEGLI IMPEGNI DEL GIORNO SELEZIONATO
+          MODALE: PANORAMICA DEGLI IMPEGNI DEL GIORNO
           ========================================================================= */}
-      {dayModalDate && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-start sm:items-center justify-center p-2.5 sm:p-4 md:p-6 overflow-y-auto"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setDayModalDate(null);
-          }}
-        >
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto flex flex-col max-h-[calc(100vh-1.5rem)] sm:max-h-[90vh]">
-            <BrandStripe height="h-2 shrink-0" />
-
-            {/* Header Modale Giorno */}
-            <div className="p-4 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/50 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#e6f6f7] text-[#008e97] flex items-center justify-center shrink-0 border border-[#008e97]/20 shadow-2xs">
-                  <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-xl font-black text-slate-900 capitalize">
-                    {formatItalianDate(dayModalDate)}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold bg-[#008e97]/10 text-[#008e97]">
-                      {dayModalEvents.length}{" "}
-                      {dayModalEvents.length === 1 ? "impegno programmato" : "impegni programmati"}
-                    </span>
-                    <span className="text-[11px] sm:text-xs text-slate-400 font-mono">
-                      {dayModalDate}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
+      <AdminModal
+        open={Boolean(dayModalDate)}
+        onClose={() => setDayModalDate(null)}
+        title={dayModalDate ? formatItalianDate(dayModalDate) : ""}
+        subtitle={`${dayModalEvents.length} ${dayModalEvents.length === 1 ? "impegno programmato" : "impegni programmati"}`}
+        icon={<CalendarDays className="h-5 w-5" />}
+        size="lg"
+        stripe
+        bodyClassName="p-4 sm:p-6 space-y-3.5"
+        footer={
+          dayModalDate ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
-                onClick={() => setDayModalDate(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors shrink-0"
-                title="Chiudi"
+                onClick={() => {
+                  const d = dayModalDate;
+                  setDayModalDate(null);
+                  openAddModal(d);
+                }}
+                className={btnTeal}
               >
-                <X className="w-5 h-5" />
+                <Plus className="h-4 w-4" />
+                <span>Nuovo impegno</span>
               </button>
-            </div>
 
-            {/* Content: Elenco Impegni della giornata */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3.5 min-h-0 overscroll-contain">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const [y, m, d] = dayModalDate.split("-").map(Number);
+                    setCurrentDate(new Date(y, m - 1, d));
+                    setSelectedDate(dayModalDate);
+                    setViewMode("day");
+                    setDayModalDate(null);
+                  }}
+                  className={`${btnOutline} flex-1 normal-case tracking-normal sm:flex-none`}
+                >
+                  Vista giorno intera
+                </button>
+                <button type="button" onClick={() => setDayModalDate(null)} className={`${btnSecondary} flex-1 sm:flex-none`}>
+                  Chiudi
+                </button>
+              </div>
+            </div>
+          ) : null
+        }
+      >
+        {dayModalDate && (
+          <>
               {dayModalEvents.length === 0 ? (
                 <div className="text-center py-10 sm:py-12 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   <CalendarIcon className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-3" />
@@ -1444,14 +1577,14 @@ export default function AgendaManager({
                               Cliente dal sito: {evt.clientName} {evt.clientCompany && `(${evt.clientCompany})`}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 text-xs shrink-0">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs min-w-0">
                             {evt.clientPhone && (
                               <a href={`tel:${evt.clientPhone}`} className="text-[#008e97] font-mono hover:underline">
                                 📞 {evt.clientPhone}
                               </a>
                             )}
                             {evt.clientEmail && (
-                              <a href={`mailto:${evt.clientEmail}`} className="text-slate-600 font-mono hover:underline">
+                              <a href={`mailto:${evt.clientEmail}`} className="text-slate-600 font-mono hover:underline break-all">
                                 ✉️ {evt.clientEmail}
                               </a>
                             )}
@@ -1487,7 +1620,7 @@ export default function AgendaManager({
                         <button
                           type="button"
                           onClick={() => setDeleteConfirmId(evt.id)}
-                          className="px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors inline-flex items-center gap-1"
+                          className="px-3.5 min-h-11 sm:min-h-10 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors inline-flex items-center gap-1.5"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           <span>Elimina</span>
@@ -1498,7 +1631,7 @@ export default function AgendaManager({
                             setDayModalDate(null);
                             openEditModal(evt);
                           }}
-                          className="px-3.5 py-1.5 text-xs font-bold bg-slate-100 hover:bg-[#e6f6f7] text-slate-700 hover:text-[#008e97] rounded-xl transition-colors inline-flex items-center gap-1.5"
+                          className="px-4 min-h-11 sm:min-h-10 text-xs font-bold bg-slate-100 hover:bg-[#e6f6f7] text-slate-700 hover:text-[#008e97] rounded-xl transition-colors inline-flex items-center gap-1.5"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                           <span>Modifica</span>
@@ -1508,96 +1641,63 @@ export default function AgendaManager({
                   );
                 })
               )}
-            </div>
-
-            {/* Footer Modale Giorno */}
-            <div className="p-3.5 sm:p-5 border-t border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  const d = dayModalDate;
-                  setDayModalDate(null);
-                  openAddModal(d);
-                }}
-                className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nuovo impegno per questa data</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const [y, m, d] = dayModalDate.split("-").map(Number);
-                    setCurrentDate(new Date(y, m - 1, d));
-                    setSelectedDate(dayModalDate);
-                    setViewMode("day");
-                    setDayModalDate(null);
-                  }}
-                  className="px-3 py-2 text-xs font-bold text-slate-600 hover:text-[#008e97] hover:bg-white rounded-xl transition-colors border border-transparent hover:border-slate-200"
-                >
-                  Vista Giorno Intera →
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDayModalDate(null)}
-                  className="px-3.5 sm:px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200/70 rounded-xl transition-colors"
-                >
-                  Chiudi
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </AdminModal>
 
       {/* =========================================================================
-          6. MODALE: DETTAGLIO SINGOLO EVENTO (SE APERTO DIRETTAMENTE)
+          MODALE: DETTAGLIO DI UN IMPEGNO
           ========================================================================= */}
-      {selectedEventForDetail && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-start sm:items-center justify-center p-2.5 sm:p-4 md:p-6 overflow-y-auto"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setSelectedEventForDetail(null);
-          }}
-        >
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[calc(100vh-1.5rem)] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
-            <BrandStripe height="h-1.5 shrink-0" />
-            
-            {/* Header fisso */}
-            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between gap-4 shrink-0 bg-white">
-              <div className="flex items-center gap-2">
-                {(() => {
-                  const cfg = getEventTypeConfig(selectedEventForDetail.type, selectedEventForDetail.customType);
-                  return (
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}
-                    >
-                      {cfg.label}
-                    </span>
-                  );
-                })()}
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                    STATUS_CONFIG[selectedEventForDetail.status].badge
-                  }`}
-                >
-                  {STATUS_CONFIG[selectedEventForDetail.status].label}
-                </span>
-              </div>
+      <AdminModal
+        open={Boolean(selectedEventForDetail)}
+        onClose={() => setSelectedEventForDetail(null)}
+        title="Dettaglio impegno"
+        subtitle={selectedEventForDetail ? formatItalianDate(selectedEventForDetail.startDate) : undefined}
+        icon={<CalendarIcon className="h-5 w-5" />}
+        size="md"
+        stripe
+        bodyClassName="p-4 sm:p-6 space-y-4"
+        footer={
+          selectedEventForDetail ? (
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
-                onClick={() => setSelectedEventForDetail(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg shrink-0 transition-colors"
-                title="Chiudi"
+                onClick={() => setDeleteConfirmId(selectedEventForDetail.id)}
+                className={`${btnOutline} border-rose-200 text-rose-600 hover:bg-rose-50`}
               >
-                <X className="w-5 h-5" />
+                <Trash2 className="h-4 w-4" />
+                <span>Elimina</span>
               </button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setSelectedEventForDetail(null)} className={`${btnSecondary} flex-1 sm:flex-none`}>
+                  Chiudi
+                </button>
+                <button type="button" onClick={() => openEditModal(selectedEventForDetail)} className={`${btnTeal} flex-1 sm:flex-none`}>
+                  <Edit2 className="h-4 w-4" />
+                  <span>Modifica</span>
+                </button>
+              </div>
             </div>
-
-            {/* Contenuto scrollabile */}
-            <div className="p-5 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-4 overscroll-contain">
+          ) : null
+        }
+      >
+        {selectedEventForDetail && (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              {(() => {
+                const cfg = getEventTypeConfig(selectedEventForDetail.type, selectedEventForDetail.customType);
+                return (
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
+                    {cfg.label}
+                  </span>
+                );
+              })()}
+              <span
+                className={`rounded-full border px-2.5 py-0.5 text-xs font-bold uppercase ${STATUS_CONFIG[selectedEventForDetail.status].badge}`}
+              >
+                {STATUS_CONFIG[selectedEventForDetail.status].label}
+              </span>
+            </div>
               <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-snug">
                 {selectedEventForDetail.title}
               </h3>
@@ -1658,7 +1758,7 @@ export default function AgendaManager({
                       <span className="font-normal text-slate-600">({selectedEventForDetail.clientCompany})</span>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-xs pt-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs pt-1">
                     {selectedEventForDetail.clientPhone && (
                       <a
                         href={`tel:${selectedEventForDetail.clientPhone}`}
@@ -1671,10 +1771,10 @@ export default function AgendaManager({
                     {selectedEventForDetail.clientEmail && (
                       <a
                         href={`mailto:${selectedEventForDetail.clientEmail}`}
-                        className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 hover:underline font-mono"
+                        className="inline-flex min-w-0 items-center gap-1 text-slate-600 hover:text-slate-900 hover:underline font-mono"
                       >
                         <Mail className="w-3 h-3" />
-                        <span>{selectedEventForDetail.clientEmail}</span>
+                        <span className="break-all">{selectedEventForDetail.clientEmail}</span>
                       </a>
                     )}
                     {onNavigateToInquiries && (
@@ -1692,81 +1792,41 @@ export default function AgendaManager({
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Footer fisso */}
-            <div className="p-3.5 sm:px-6 sm:py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmId(selectedEventForDetail.id)}
-                className="px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
-              >
-                Elimina Impegno
-              </button>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedEventForDetail(null)}
-                  className="px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200/70 rounded-xl transition-colors"
-                >
-                  Chiudi
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openEditModal(selectedEventForDetail)}
-                  className="px-4 py-1.5 text-xs font-bold bg-[#008e97] text-white rounded-xl hover:bg-[#00777f] transition-all shadow-xs"
-                >
-                  Modifica
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </AdminModal>
 
       {/* =========================================================================
-          6. MODALE: CREA / MODIFICA EVENTO
+          MODALE: CREA / MODIFICA IMPEGNO
           ========================================================================= */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-start sm:items-center justify-center p-2.5 sm:p-4 md:p-6 overflow-y-auto"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsModalOpen(false);
-          }}
-        >
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[calc(100vh-1.5rem)] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
-            <BrandStripe height="h-1.5 shrink-0" />
-
-            {/* Header fisso (sempre visibile in alto) */}
-            <div className="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-              <div className="pr-2">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                  {editingEventId ? "Modifica Impegno in Agenda" : "Nuovo Impegno in Agenda"}
-                </h3>
-                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                  Compila i dettagli operativi per pianificare sessioni, visite o scadenze.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
-                title="Chiudi"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Form suddiviso con Corpo Scorrevole e Footer Fisso */}
-            <form onSubmit={handleSaveEvent} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              <div className="p-4 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-4 flex-1 overscroll-contain">
+      <AdminModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingEventId ? "Modifica impegno" : "Nuovo impegno"}
+        subtitle="Sessioni, visite o scadenze da pianificare"
+        icon={<CalendarPlus className="h-5 w-5" />}
+        size="md"
+        stripe
+        dismissOnBackdrop={false}
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button type="button" onClick={() => setIsModalOpen(false)} className={`${btnSecondary} flex-1 sm:flex-none`}>
+              Annulla
+            </button>
+            <button type="submit" form="agenda-form" disabled={isSaving} className={`${btnTeal} flex-[2] sm:flex-none`}>
+              {editingEventId ? "Salva modifiche" : "Inserisci in agenda"}
+            </button>
+          </div>
+        }
+      >
+        <form id="agenda-form" onSubmit={handleSaveEvent} className="space-y-3.5 sm:space-y-4">
                 {/* 1. TITOLO DELL'IMPEGNO (CAMPO LIBERO PRINCIPALE) */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-bold text-slate-800">
                       Titolo dell'Impegno * <span className="font-medium text-slate-400">(Campo libero)</span>
                     </label>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="hidden sm:inline text-[11px] text-slate-400">
                       Testo personalizzabile al 100%
                     </span>
                   </div>
@@ -1778,7 +1838,7 @@ export default function AgendaManager({
                     placeholder="es. Sopralluogo Cantiere Olbia, Riunione RSPP, Ferie, Corso Antincendio..."
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97] focus:bg-white transition-all shadow-2xs"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="hidden sm:block text-[11px] text-slate-400 mt-1">
                     Puoi scrivere qualsiasi impegno o attività aziendale senza restrizioni.
                   </p>
                 </div>
@@ -1804,7 +1864,7 @@ export default function AgendaManager({
                               clientEmail: "",
                             });
                           }}
-                          className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-bold"
+                          className="min-h-9 px-1 text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-bold"
                         >
                           Scollega richiesta
                         </button>
@@ -1959,7 +2019,7 @@ export default function AgendaManager({
                         <button
                           type="button"
                           onClick={() => setFormData({ ...formData, courseId: "" })}
-                          className="text-[11px] text-slate-500 hover:text-slate-800 underline"
+                          className="min-h-9 px-1 text-[11px] text-slate-500 hover:text-slate-800 underline"
                         >
                           Scollega corso
                         </button>
@@ -1988,8 +2048,8 @@ export default function AgendaManager({
                 )}
 
                 {/* Date e Orari */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="col-span-2 sm:col-span-1">
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Data *
                     </label>
@@ -2060,73 +2120,25 @@ export default function AgendaManager({
                     Note & Dettagli Logistici
                   </label>
                   <textarea
-                    rows={2}
+                    rows={3}
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     placeholder="Materiale occorrente, contatti cantiere, DPI richiesti..."
                     className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#008e97]"
                   />
                 </div>
-              </div>
+        </form>
+      </AdminModal>
 
-              {/* Footer fisso (sempre visibile in fondo, mai tagliato) */}
-              <div className="px-4 py-3 sm:px-6 sm:py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200/70 rounded-xl transition-colors"
-                >
-                  Annulla
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-5 sm:px-6 py-2 bg-[#008e97] hover:bg-[#00777f] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all"
-                >
-                  {editingEventId ? "Salva Modifiche" : "Inserisci in Agenda"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modale Conferma Eliminazione */}
-      {deleteConfirmId && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setDeleteConfirmId(null);
-          }}
-        >
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full text-center animate-in fade-in zoom-in-95 duration-200 my-auto">
-            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
-              <Trash2 className="w-6 h-6" />
-            </div>
-            <h4 className="text-base font-bold text-slate-900">Eliminare questo impegno?</h4>
-            <p className="text-xs text-slate-500 mt-1 mb-5">
-              L'impegno verrà rimosso dall'agenda. Questa operazione non può essere annullata.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
-              >
-                Annulla
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDeleteEvent(deleteConfirmId)}
-                className="px-4 py-2 text-xs font-bold bg-[#df0000] text-white rounded-xl hover:bg-[#b80000]"
-              >
-                Elimina Definitivamente
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={Boolean(deleteConfirmId)}
+        title="Eliminare questo impegno?"
+        confirmLabel="Elimina definitivamente"
+        onConfirm={() => deleteConfirmId && handleDeleteEvent(deleteConfirmId)}
+        onCancel={() => setDeleteConfirmId(null)}
+      >
+        L&apos;impegno verrà rimosso dall&apos;agenda. Questa operazione non può essere annullata.
+      </ConfirmDialog>
     </div>
   );
 }
-
