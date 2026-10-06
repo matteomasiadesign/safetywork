@@ -202,7 +202,7 @@ async function handle(request: Request) {
     success: true,
     message:
       kind === "corso"
-        ? "Richiesta di iscrizione registrata. Il nostro ufficio formazione ti ricontatterà entro 24 ore."
-        : "Grazie per averci contattato! Un nostro tecnico ti ricontatterà entro 24 ore lavorative.",
+        ? "Richiesta di iscrizione registrata. Il nostro ufficio formazione ti ricontatterà al più presto."
+        : "Grazie per averci contattato! Un nostro consulente ti ricontatterà al più presto.",
   });
 }

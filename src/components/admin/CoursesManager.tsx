@@ -106,7 +106,7 @@ const STATUS_CHIPS: {
 /** Passaggi della procedura guidata (colori propri di ciascun passaggio). */
 const WIZARD_STEPS = [
   { n: 1, title: "Base", sub: "Titolo & Categoria", active: "border-[#008e97]/30 bg-[#e6f6f7] text-[#008e97]", badge: "bg-[#008e97]" },
-  { n: 2, title: "Sede & Ore", sub: "Modalità & Posti", active: "border-[#f58220]/40 bg-[#fff4ea] text-[#f58220]", badge: "bg-[#f58220]" },
+  { n: 2, title: "Sede & Ore", sub: "Modalità & Date", active: "border-[#f58220]/40 bg-[#fff4ea] text-[#f58220]", badge: "bg-[#f58220]" },
   { n: 3, title: "Didattica", sub: "Programma & Test", active: "border-red-200 bg-red-50 text-[#df0000]", badge: "bg-[#df0000]" },
   { n: 4, title: "Media & Pubblica", sub: "Foto & Visibilità", active: "border-[#008e97]/40 bg-[#e6f6f7] text-[#008e97]", badge: "bg-[#008e97]" },
 ];

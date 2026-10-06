@@ -139,7 +139,7 @@ export default function CourseBookingForm({ course, phoneHref, editions }: Cours
         </h3>
 
         <p className="text-sm text-slate-600 mt-3 max-w-lg mx-auto leading-relaxed">
-          Grazie per aver scelto <strong>{COMPANY_CONFIG.name}</strong>. Il nostro ufficio formazione ha preso in carico la richiesta per <strong>{course.title}</strong> e ti contatterà entro 24 ore per finalizzare calendario e attestazione.
+          Grazie per aver scelto <strong>{COMPANY_CONFIG.name}</strong>. Il nostro ufficio formazione ha preso in carico la richiesta per <strong>{course.title}</strong> e ti contatterà al più presto per finalizzare calendario e attestazione.
         </p>
 
         <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-4">
