@@ -12,6 +12,11 @@ import { COMPANY_CONFIG } from "@/config/company";
  *   **grassetto**   [[parola evidenziata]]
  */
 export const CONTENT_DEFAULTS = {
+  // ------------------------------------------------------------ marchio e immagini predefinite
+  "brand.logo": "/favicon.webp",
+  "courses.fallback_image":
+    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1600&auto=format&fit=crop&q=80",
+
   // ---------------------------------------------------------------- home: hero
   "home.hero.image": "https://images.unsplash.com/photo-1705579612477-20866d78deeb?auto=format&fit=crop&w=2070&q=80",
   "home.hero.badge": "Safety Works · Porto Torres (SS)",
@@ -37,6 +42,20 @@ export const CONTENT_DEFAULTS = {
   "home.courses.title": "Corsi in Programma",
   "home.courses.subtitle":
     "Corsi disponibili tramite Safety Works. Seleziona una scheda per consultare programma, modalità, date e sedi e inviare la tua richiesta di iscrizione.",
+
+  // ------------------------------------------------------------ home: eventi
+  "home.events.image": "https://images.unsplash.com/photo-1671631981648-94ccf5623255?auto=format&fit=crop&w=2070&q=80",
+  "home.events.badge": "Eventi e manifestazioni",
+  "home.events.title": "Soluzioni di [[safety & security]] per eventi",
+  "home.events.subtitle":
+    "Dai piani di sicurezza alla gestione operativa il giorno dell'evento: addetti antincendio, personale qualificato e un referente unico al tuo fianco, per concerti, manifestazioni e spettacoli.",
+  "home.events.point1": "Piani di safety e security",
+  "home.events.point2": "Addetti antincendio e primo soccorso",
+  "home.events.point3": "Coordinamento sul campo",
+  "home.events.cta_whatsapp": "Scrivici su WhatsApp",
+  "home.events.cta_call": "Chiama ora",
+  "home.events.cta_form": "Richiedi un preventivo",
+  "home.events.whatsapp_message": "Buongiorno, vorrei informazioni sui vostri servizi di safety e security per eventi.",
 
   // ------------------------------------------------------------ home: chi siamo
   "home.about.image": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=2000&auto=format&fit=crop&q=80",
@@ -149,6 +168,8 @@ export interface ContentField {
   allowEmpty?: boolean;
   /** Titoletto che apre un gruppo di campi nella stessa sezione. */
   groupLabel?: string;
+  /** Solo per le immagini: "contain" mostra l'anteprima intera (utile per loghi), altrimenti ritagliata. */
+  imageFit?: "contain";
 }
 
 export interface ContentSection {
@@ -222,6 +243,26 @@ export const CONTENT_SECTIONS: ContentSection[] = [
       f("home.courses.badge", "Etichetta"),
       f("home.courses.title", "Titolo"),
       f("home.courses.subtitle", "Descrizione", "textarea"),
+    ],
+  },
+  {
+    id: "home-events",
+    page: "Home page",
+    title: "Eventi (safety & security)",
+    description: "Sezione dopo i corsi, senza pagina collegata: i pulsanti portano a WhatsApp, alla chiamata o al modulo di contatto.",
+    previewHref: "/#eventi",
+    fields: [
+      f("home.events.image", "Immagine di sfondo", "image", { hint: "Meglio una foto scura e notturna: il testo bianco resta leggibile." }),
+      f("home.events.badge", "Etichetta"),
+      f("home.events.title", "Titolo", "textarea", { hint: HIGHLIGHT_HINT }),
+      f("home.events.subtitle", "Descrizione", "textarea", { hint: BOLD_HINT }),
+      f("home.events.point1", "Punto 1", "text", { groupLabel: "Punti in evidenza", allowEmpty: true }),
+      f("home.events.point2", "Punto 2", "text", { allowEmpty: true }),
+      f("home.events.point3", "Punto 3", "text", { allowEmpty: true }),
+      f("home.events.cta_whatsapp", "Pulsante WhatsApp", "text", { groupLabel: "Pulsanti (usano il telefono dei Recapiti aziendali)" }),
+      f("home.events.cta_call", "Pulsante chiamata"),
+      f("home.events.cta_form", "Pulsante modulo di contatto", "text", { hint: "Porta alla sezione Contatti della home." }),
+      f("home.events.whatsapp_message", "Messaggio WhatsApp precompilato", "textarea", { hint: "Il testo già scritto quando si apre la chat." }),
     ],
   },
   {
@@ -317,6 +358,27 @@ export const CONTENT_SECTIONS: ContentSection[] = [
       ...pillarFields(2),
       ...pillarFields(3),
       ...pillarFields(4),
+    ],
+  },
+  {
+    id: "courses-fallback",
+    page: "Pagina Corsi",
+    title: "Immagine predefinita dei corsi",
+    description: "Foto mostrata sui corsi che non hanno una copertina propria (la copertina di ogni corso si cambia in “Gestione Corsi”).",
+    previewHref: "/corsi",
+    fields: [f("courses.fallback_image", "Immagine predefinita", "image")],
+  },
+  {
+    id: "brand",
+    page: "Dati aziendali",
+    title: "Logo e icona del sito",
+    description: "Il marchio in barra superiore, footer e schermata di caricamento. Diventa anche l'icona della scheda del browser.",
+    previewHref: "/",
+    fields: [
+      f("brand.logo", "Logo", "image", {
+        imageFit: "contain",
+        hint: "Meglio un'immagine quadrata con sfondo trasparente (PNG o WebP).",
+      }),
     ],
   },
   {

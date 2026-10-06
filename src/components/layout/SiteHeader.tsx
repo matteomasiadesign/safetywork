@@ -6,5 +6,5 @@ import { companyContacts } from "@/lib/content/format";
 /** Navbar con i corsi in evidenza e i recapiti letti da Supabase. */
 export default async function SiteHeader() {
   const [courseLinks, content] = await Promise.all([getFeaturedCourseLinks(), getSiteContent()]);
-  return <Navbar courseLinks={courseLinks} contacts={companyContacts(content)} />;
+  return <Navbar courseLinks={courseLinks} contacts={companyContacts(content)} logoSrc={content["brand.logo"]} />;
 }

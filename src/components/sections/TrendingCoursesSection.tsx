@@ -61,7 +61,12 @@ export default function TrendingCoursesSection({ courses, content }: TrendingCou
         {openCourses.length > 0 ? (
           <div className={`grid items-stretch gap-6 ${gridClass(openCourses.length)}`}>
             {openCourses.map((course) => (
-              <CourseCard key={course.id} course={course} variant={single ? "wide" : "stack"} />
+              <CourseCard
+                key={course.id}
+                course={course}
+                variant={single ? "wide" : "stack"}
+                fallbackImage={content["courses.fallback_image"]}
+              />
             ))}
           </div>
         ) : (

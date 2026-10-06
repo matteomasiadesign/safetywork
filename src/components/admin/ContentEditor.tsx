@@ -248,7 +248,11 @@ export default function ContentEditor({ overrides, onSave, showToast, onDirtyCha
           <div className="grid grid-cols-1 sm:grid-cols-[14rem_1fr] gap-4 items-start">
             <div className="h-40 sm:h-36 rounded-2xl overflow-hidden border border-slate-200 bg-slate-200 flex items-center justify-center">
               {value ? (
-                <img src={value} alt={field.label} className="w-full h-full object-cover" />
+                <img
+                  src={value}
+                  alt={field.label}
+                  className={`w-full h-full ${field.imageFit === "contain" ? "object-contain p-3" : "object-cover"}`}
+                />
               ) : (
                 <ImageIcon className="w-8 h-8 text-slate-400" />
               )}

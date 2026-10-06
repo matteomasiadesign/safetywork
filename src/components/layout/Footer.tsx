@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "@/components/ui/Link";
 import { ArrowUp, Mail, Phone, MapPin, CheckCircle2, PhoneCall, ArrowRight } from "lucide-react";
 import { COMPANY_CONFIG } from "@/config/company";
@@ -18,9 +17,11 @@ interface FooterProps {
   courseLinks?: FooterCourseLink[];
   /** Recapiti aziendali (modificabili da /admin). */
   contacts: CompanyContacts;
+  /** Logo (modificabile da /admin). */
+  logoSrc: string;
 }
 
-export default function Footer({ courseLinks = [], contacts }: FooterProps) {
+export default function Footer({ courseLinks = [], contacts, logoSrc }: FooterProps) {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -100,8 +101,9 @@ export default function Footer({ courseLinks = [], contacts }: FooterProps) {
           {/* Colonna Brand & Recapiti con Barrette Geometriche */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center space-x-3">
-              <Image
-                src="/favicon.webp"
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoSrc}
                 alt="Safety Works"
                 width={40}
                 height={40}

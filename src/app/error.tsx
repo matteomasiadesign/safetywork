@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 import { CONTENT_DEFAULTS } from "@/lib/content/schema";
 import { companyContacts } from "@/lib/content/format";
 
-// La schermata di errore non può leggere il database: usa i recapiti originali.
+// La schermata di errore non può leggere il database: usa recapiti e logo originali.
 const contacts = companyContacts(CONTENT_DEFAULTS);
 
 export default function GlobalError({
@@ -23,7 +23,7 @@ export default function GlobalError({
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900">
-      <Navbar contacts={contacts} />
+      <Navbar contacts={contacts} logoSrc={CONTENT_DEFAULTS["brand.logo"]} />
       <main className="flex-grow flex items-center justify-center px-4 py-24">
         <div className="max-w-md text-center space-y-5">
           <div className="w-16 h-16 rounded-2xl bg-[#fdf2f2] border border-[#df0000]/20 text-[#df0000] flex items-center justify-center mx-auto">
@@ -55,7 +55,7 @@ export default function GlobalError({
           </div>
         </div>
       </main>
-      <Footer contacts={contacts} />
+      <Footer contacts={contacts} logoSrc={CONTENT_DEFAULTS["brand.logo"]} />
     </div>
   );
 }

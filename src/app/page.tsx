@@ -4,6 +4,7 @@ import Preloader from "@/components/ui/Preloader";
 import HeroSection, { type HeroNextDate } from "@/components/sections/HeroSection";
 import { editionDayMonth, modeLabel, normalizeMode, upcomingEditions } from "@/lib/courses/format";
 import TrendingCoursesSection from "@/components/sections/TrendingCoursesSection";
+import EventsSection from "@/components/sections/EventsSection";
 import AboutSection from "@/components/sections/AboutSection";
 import ServicesSection from "@/components/sections/ServicesSection";
 import ContactSection from "@/components/sections/ContactSection";
@@ -38,7 +39,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-slate-900">
-      <Preloader imageSrc={content["home.hero.image"]} />
+      <Preloader imageSrc={content["home.hero.image"]} logoSrc={content["brand.logo"]} />
       <SiteHeader />
       <main className="flex-grow">
         {/* 1. Hero */}
@@ -47,16 +48,19 @@ export default async function HomePage() {
         {/* 2. Corsi del momento */}
         <TrendingCoursesSection courses={courses} content={content} />
 
-        {/* 3. Chi siamo */}
+        {/* 3. Eventi: solo WhatsApp, chiamata e modulo contatti, nessuna pagina collegata */}
+        <EventsSection content={pickContent(content, "home.events.", "company.")} />
+
+        {/* 4. Chi siamo */}
         <AboutSection content={content} />
 
-        {/* 4. Servizi di sicurezza */}
+        {/* 5. Servizi di sicurezza */}
         <ServicesSection services={services} content={content} />
 
-        {/* 5. Contatti */}
+        {/* 6. Contatti */}
         <ContactSection content={pickContent(content, "home.contact.", "company.")} />
 
-        {/* 6. Mappa della sede operativa */}
+        {/* 7. Mappa della sede operativa */}
         <MapSection content={content} />
       </main>
       <SiteFooter />

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Inter, Bricolage_Grotesque } from "next/font/google";
 import { COMPANY_CONFIG } from "@/config/company";
 import SiteFloatingContact from "@/components/ui/SiteFloatingContact";
+import { getSiteContent } from "@/lib/data/content";
+import { CONTENT_DEFAULTS } from "@/lib/content/schema";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -30,37 +32,49 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export const metadata: Metadata = {
-  title: `${COMPANY_CONFIG.name} | ${COMPANY_CONFIG.tagline}`,
-  description: COMPANY_CONFIG.description,
-  keywords: [
-    "Safety Works",
-    "Sicurezza sul lavoro",
-    "D.Lgs. 81/08",
-    "Corsi sicurezza lavoro",
-    "DVR",
-    "RSPP",
-    "RLS",
-    "Antincendio",
-    "Primo Soccorso",
-    "Igiene industriale",
-    "Consulenza sicurezza Porto Torres",
-    "Formazione accreditata Sardegna",
-  ],
-  icons: {
-    icon: "/favicon.webp",
-    apple: "/favicon.webp",
-  },
-  authors: [{ name: COMPANY_CONFIG.name }],
-  creator: COMPANY_CONFIG.name,
-  openGraph: {
+/** L'icona della scheda è il logo scelto in admin; se i contenuti non si leggono resta quella originale. */
+async function getLogoUrl(): Promise<string> {
+  try {
+    return (await getSiteContent())["brand.logo"];
+  } catch {
+    return CONTENT_DEFAULTS["brand.logo"];
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const logo = await getLogoUrl();
+  return {
     title: `${COMPANY_CONFIG.name} | ${COMPANY_CONFIG.tagline}`,
     description: COMPANY_CONFIG.description,
-    type: "website",
-    locale: "it_IT",
-    siteName: COMPANY_CONFIG.name,
-  },
-};
+    keywords: [
+      "Safety Works",
+      "Sicurezza sul lavoro",
+      "D.Lgs. 81/08",
+      "Corsi sicurezza lavoro",
+      "DVR",
+      "RSPP",
+      "RLS",
+      "Antincendio",
+      "Primo Soccorso",
+      "Igiene industriale",
+      "Consulenza sicurezza Porto Torres",
+      "Formazione accreditata Sardegna",
+    ],
+    icons: {
+      icon: logo,
+      apple: logo,
+    },
+    authors: [{ name: COMPANY_CONFIG.name }],
+    creator: COMPANY_CONFIG.name,
+    openGraph: {
+      title: `${COMPANY_CONFIG.name} | ${COMPANY_CONFIG.tagline}`,
+      description: COMPANY_CONFIG.description,
+      type: "website",
+      locale: "it_IT",
+      siteName: COMPANY_CONFIG.name,
+    },
+  };
+}
 
 export default function RootLayout({
   children,

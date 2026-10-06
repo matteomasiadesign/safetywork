@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Link from "@/components/ui/Link";
 import { ArrowRight, ArrowUpRight, ChevronDown, Clock, Mail, PhoneCall, X } from "lucide-react";
@@ -17,6 +16,8 @@ interface NavbarProps {
   courseLinks?: NavbarCourseLink[];
   /** Recapiti aziendali (modificabili da /admin). */
   contacts: CompanyContacts;
+  /** Logo (modificabile da /admin). */
+  logoSrc: string;
 }
 
 /** Sezioni della home che accendono la voce di menu corrispondente mentre si scorre. */
@@ -27,15 +28,15 @@ const HOME_SECTIONS: [id: string, link: string][] = [
   ["contatti", "Contatti"],
 ];
 
-function Logo({ light = false }: { light?: boolean }) {
+function Logo({ src, light = false }: { src: string; light?: boolean }) {
   return (
     <span className="flex items-center gap-2.5">
-      <Image
-        src="/favicon.webp"
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
         alt=""
         width={36}
         height={36}
-        priority
         className="h-9 w-9 object-contain transition-transform duration-300 group-hover/logo:scale-105"
       />
       <span className={`font-display text-[1.2rem] font-extrabold leading-none tracking-tight ${light ? "text-white" : "text-slate-900"}`}>
@@ -45,7 +46,7 @@ function Logo({ light = false }: { light?: boolean }) {
   );
 }
 
-export default function Navbar({ courseLinks = [], contacts }: NavbarProps) {
+export default function Navbar({ courseLinks = [], contacts, logoSrc }: NavbarProps) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [homeActive, setHomeActive] = useState<string | null>(null);
@@ -120,7 +121,7 @@ export default function Navbar({ courseLinks = [], contacts }: NavbarProps) {
         >
           {/* Logo */}
           <Link href="/" className="group/logo flex w-fit items-center" aria-label="Safety Works, home">
-            <Logo />
+            <Logo src={logoSrc} />
           </Link>
 
           {/* Navigazione desktop */}
@@ -262,7 +263,7 @@ export default function Navbar({ courseLinks = [], contacts }: NavbarProps) {
           <div className="hero-fade absolute inset-x-3 bottom-3 top-3 flex flex-col overflow-hidden rounded-[28px] bg-[#0b1320] text-white shadow-2xl">
             <div className="flex h-[68px] shrink-0 items-center justify-between pl-5 pr-3">
               <Link href="/" onClick={closeMenu} className="group/logo" aria-label="Safety Works, home">
-                <Logo light />
+                <Logo src={logoSrc} light />
               </Link>
               <button
                 type="button"

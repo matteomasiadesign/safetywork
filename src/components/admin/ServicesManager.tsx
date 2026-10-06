@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import type { ServiceItem } from "@/lib/types/database";
 import type { ServiceInput } from "@/context/AdminDataContext";
-import { COURSE_IMAGE_PRESETS } from "@/components/admin/CoursesManager";
 import { compressImage, formatBytes } from "@/lib/images/compress";
 import AdminModal from "@/components/admin/ui/AdminModal";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
@@ -60,7 +59,7 @@ const emptyForm = (code: string): ServiceFormState => ({
   code,
   title: "",
   law: "Titolo IV D.Lgs. 81/08",
-  image_url: COURSE_IMAGE_PRESETS[1].url,
+  image_url: null,
   description: "",
   deliverables: [
     "Incarico e nomina formale asseverata",
@@ -104,10 +103,10 @@ export default function ServicesManager({
     setImageInfo("");
   };
 
-  // Imposta un'immagine da URL, scartando l'eventuale foto in attesa
-  const setImageUrl = (url: string) => {
+  // Toglie la foto (anche quella scelta ma non ancora salvata)
+  const clearImage = () => {
     resetImageState();
-    setServiceForm((prev) => ({ ...prev, image_url: url }));
+    setServiceForm((prev) => ({ ...prev, image_url: null }));
   };
 
   // Chiusura del modale: libera l'anteprima della foto non salvata
@@ -305,11 +304,15 @@ export default function ServicesManager({
                   className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-shadow hover:shadow-md sm:p-5"
                 >
                   <div className="relative -mx-4 -mt-4 mb-4 h-32 overflow-hidden rounded-t-2xl sm:-mx-5 sm:-mt-5 sm:h-36">
-                    <img
-                      src={srv.image_url || COURSE_IMAGE_PRESETS[1].url}
-                      alt={srv.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                    {srv.image_url ? (
+                      <img
+                        src={srv.image_url}
+                        alt={srv.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-slate-800" />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
                     <span className="absolute left-3 top-3 rounded-md border border-white/20 bg-slate-900/80 px-2.5 py-1 font-mono text-[11px] font-bold text-white backdrop-blur-md">
                       {srv.code}
@@ -548,27 +551,29 @@ export default function ServicesManager({
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700">Immagine di Copertina del Servizio</label>
               <input
-                type="text"
-                value={pendingImage ? "(foto caricata dal computer)" : serviceForm.image_url ?? ""}
-                readOnly={Boolean(pendingImage)}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="URL immagine..."
-                className={`${fieldClass} mb-2 font-mono`}
-              />
-
-              <input
                 type="file"
                 ref={serviceFileInputRef}
                 accept="image/jpeg,image/png,image/webp,image/avif"
                 onChange={handleServiceImageUpload}
                 className="hidden"
               />
-              <button type="button" onClick={() => serviceFileInputRef.current?.click()} className={`${btnOutline} w-full normal-case tracking-normal sm:w-auto`}>
-                <Upload className="h-4 w-4 text-[#008e97]" />
-                <span>Carica dal dispositivo</span>
-              </button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button type="button" disabled={isSaving} onClick={() => serviceFileInputRef.current?.click()} className={`${btnOutline} w-full normal-case tracking-normal sm:w-auto`}>
+                  <Upload className="h-4 w-4 text-[#008e97]" />
+                  <span>Carica foto dal computer</span>
+                </button>
+                {serviceForm.image_url && (
+                  <button type="button" disabled={isSaving} onClick={clearImage} className={`${btnOutline} w-full normal-case tracking-normal sm:w-auto`}>
+                    <X className="h-4 w-4" />
+                    <span>Rimuovi foto</span>
+                  </button>
+                )}
+              </div>
               <p className="mt-1.5 text-[11px] text-slate-500">
-                {imageInfo || "Ottimizzata automaticamente sotto i 150 kB, senza perdita visibile."}
+                {imageInfo ||
+                  (serviceForm.image_url
+                    ? "Per sostituirla scegli un'altra foto: viene ottimizzata sotto i 150 kB e salvata sul sito."
+                    : "Nessuna foto: la scheda mostra uno sfondo scuro. JPG, PNG, WebP o AVIF vengono ottimizzati sotto i 150 kB.")}
               </p>
             </div>
 

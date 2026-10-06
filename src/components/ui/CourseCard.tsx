@@ -14,12 +14,11 @@ interface CourseCardProps {
   course: Course;
   /** "wide": immagine a sinistra e testo a destra (da md in su). Serve quando c'è un solo corso. */
   variant?: "stack" | "wide";
+  /** Foto usata se il corso non ne ha una propria (modificabile da /admin). */
+  fallbackImage: string;
 }
 
-const fallbackImage =
-  "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80";
-
-export default function CourseCard({ course, variant = "stack" }: CourseCardProps) {
+export default function CourseCard({ course, variant = "stack", fallbackImage }: CourseCardProps) {
   const mode = normalizeMode(course.mode);
   const ModeIcon = mode === "online" ? Monitor : mode === "misto" ? Layers : MapPin;
   const editions = upcomingEditions(course.editions);

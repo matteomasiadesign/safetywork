@@ -8,7 +8,7 @@ import BrandStripe from "@/components/ui/BrandStripe";
  *
  * - Il markup è già nell'HTML del server e lo script qui sotto accende `data-preloading` su <html> prima del
  *   primo disegno: nessun lampo della pagina sotto. Finché l'attributo c'è, le animazioni della hero restano ferme.
- * - Il logo (/favicon.webp) si colora dal basso verso l'alto seguendo il caricamento vero (foto della hero e font).
+ * - Il logo (modificabile da /admin) si colora dal basso verso l'alto seguendo il caricamento vero (foto della hero e font).
  * - Finito il caricamento il pannello scorre verso l'alto e, mentre scopre la hero, parte la sua animazione.
  * - Non compare con "riduci animazioni", se la sessione l'ha già visto o se sessionStorage non è disponibile.
  * - Se qualcosa va storto, dopo 9 secondi lo script stesso toglie il blocco: la pagina non resta mai coperta.
@@ -22,7 +22,7 @@ const HERO_START_MS = 420; // la hero parte mentre il pannello sta ancora salend
 
 const BOOT_SCRIPT = `try{if(!sessionStorage.getItem("${SESSION_KEY}")&&!matchMedia("(prefers-reduced-motion: reduce)").matches){sessionStorage.setItem("${SESSION_KEY}","1");var d=document.documentElement;d.setAttribute("data-preloading","");setTimeout(function(){d.removeAttribute("data-preloading")},9000)}}catch(e){}`;
 
-export default function Preloader({ imageSrc }: { imageSrc?: string }) {
+export default function Preloader({ imageSrc, logoSrc }: { imageSrc?: string; logoSrc: string }) {
   const [phase, setPhase] = useState<"loading" | "leaving" | "done">("loading");
   const rootRef = useRef<HTMLDivElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
@@ -125,7 +125,7 @@ export default function Preloader({ imageSrc }: { imageSrc?: string }) {
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/favicon.webp"
+              src={logoSrc}
               alt=""
               width={239}
               height={230}
@@ -133,7 +133,7 @@ export default function Preloader({ imageSrc }: { imageSrc?: string }) {
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/favicon.webp"
+              src={logoSrc}
               alt=""
               width={239}
               height={230}

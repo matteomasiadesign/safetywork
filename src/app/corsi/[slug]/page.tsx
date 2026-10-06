@@ -66,7 +66,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const contacts = companyContacts(await getSiteContent());
+  const content = await getSiteContent();
+  const contacts = companyContacts(content);
   const mode = normalizeMode(course.mode);
   const editions = upcomingEditions(course.editions);
   const nextEdition = editions[0];
@@ -97,7 +98,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
         <section className="relative bg-slate-950 text-white pt-28 pb-14 lg:pt-36 lg:pb-20 overflow-hidden">
           <div className="absolute inset-0 opacity-25">
             <img
-              src={course.image_url || "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1600&auto=format&fit=crop&q=80"}
+              src={course.image_url || content["courses.fallback_image"]}
               alt={course.title}
               className="w-full h-full object-cover"
             />

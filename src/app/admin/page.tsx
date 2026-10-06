@@ -14,6 +14,7 @@ import CategoriesManager from "@/components/admin/CategoriesManager";
 import ServicesManager from "@/components/admin/ServicesManager";
 import AgendaManager from "@/components/admin/AgendaManager";
 import ContentEditor from "@/components/admin/ContentEditor";
+import { CONTENT_DEFAULTS } from "@/lib/content/schema";
 
 function AdminDashboard() {
   const router = useRouter();
@@ -209,6 +210,7 @@ function AdminDashboard() {
               onAddCategory={addCategory}
               onNavigateToCategories={() => goTo("categories")}
               showToast={showToast}
+              fallbackImage={siteContent["courses.fallback_image"] ?? CONTENT_DEFAULTS["courses.fallback_image"]}
             />
           )}
 

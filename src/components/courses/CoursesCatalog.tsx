@@ -20,7 +20,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-export default function CoursesCatalog({ courses }: { courses: Course[] }) {
+export default function CoursesCatalog({ courses, fallbackImage }: { courses: Course[]; fallbackImage: string }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("Tutti");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedMode, setSelectedMode] = useState<CourseMode | "tutte">("tutte");
@@ -288,7 +288,7 @@ export default function CoursesCatalog({ courses }: { courses: Course[] }) {
           {filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredCourses.map((course) => (
-                <CourseCard key={course.id} course={course} />
+                <CourseCard key={course.id} course={course} fallbackImage={fallbackImage} />
               ))}
             </div>
           ) : (
