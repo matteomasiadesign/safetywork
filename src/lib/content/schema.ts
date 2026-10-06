@@ -147,6 +147,16 @@ export const CONTENT_DEFAULTS = {
   "about.pillar4.tag": "Compliance & Metodologia",
   "about.pillar4.image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80",
 
+  // Galleria dell'ufficio: nessuna foto di partenza, la sezione compare solo quando ne viene caricata almeno una.
+  "about.gallery.badge": "Dove lavoriamo",
+  "about.gallery.title": "Il nostro [[ufficio]]",
+  "about.gallery.subtitle": "Uno spazio pensato per accogliere clienti, ospitare la formazione e lavorare insieme.",
+  "about.gallery.photo1": "",
+  "about.gallery.photo2": "",
+  "about.gallery.photo3": "",
+  "about.gallery.photo4": "",
+  "about.gallery.photo5": "",
+
   // ------------------------------------------------------------ recapiti
   "company.phone": COMPANY_CONFIG.contacts.phone,
   "company.email": COMPANY_CONFIG.contacts.email,
@@ -358,6 +368,24 @@ export const CONTENT_SECTIONS: ContentSection[] = [
       ...pillarFields(2),
       ...pillarFields(3),
       ...pillarFields(4),
+    ],
+  },
+  {
+    id: "about-gallery",
+    page: "Pagina Chi siamo",
+    title: "Galleria dell'ufficio",
+    description:
+      "Fino a 5 foto in una griglia “bento” in fondo alla pagina: la prima è la più grande. Senza foto la sezione non compare; con meno di 5 la griglia si adatta da sola.",
+    previewHref: "/chi-siamo",
+    fields: [
+      f("about.gallery.badge", "Etichetta", "text", { allowEmpty: true }),
+      f("about.gallery.title", "Titolo", "text", { hint: HIGHLIGHT_HINT }),
+      f("about.gallery.subtitle", "Descrizione", "textarea", { allowEmpty: true }),
+      f("about.gallery.photo1", "Foto 1 (grande)", "image", { groupLabel: "Foto" }),
+      f("about.gallery.photo2", "Foto 2", "image"),
+      f("about.gallery.photo3", "Foto 3", "image"),
+      f("about.gallery.photo4", "Foto 4", "image"),
+      f("about.gallery.photo5", "Foto 5", "image"),
     ],
   },
   {

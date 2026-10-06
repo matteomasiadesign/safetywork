@@ -6,6 +6,8 @@ import { Shield, FileText, Award, HardHat, Settings, CheckCircle2 } from "lucide
 import { COMPANY_CONFIG } from "@/config/company";
 import RichText from "@/components/ui/RichText";
 import { getSiteContent } from "@/lib/data/content";
+import { pickContent } from "@/lib/content/schema";
+import OfficeGallery from "@/components/sections/OfficeGallery";
 
 export const revalidate = 60; // ISR ogni 60 secondi (e subito dopo ogni modifica dall'admin)
 
@@ -173,6 +175,9 @@ export default async function AboutPage() {
             </div>
           </div>
         </section>
+
+        {/* Galleria dell'ufficio (compare solo se in admin è stata caricata almeno una foto) */}
+        <OfficeGallery content={pickContent(content, "about.gallery.")} />
       </main>
 
       <SiteFooter />

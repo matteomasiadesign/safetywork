@@ -194,6 +194,8 @@ export default function ContentEditor({ overrides, onSave, showToast, onDirtyCha
     const value = currentValue(key);
     const isCustomized = value !== CONTENT_DEFAULTS[key];
     const isChanged = changedKeys.includes(key);
+    // Foto che di partenza non esiste (es. galleria): "ripristinare" significa toglierla.
+    const isOptionalPhoto = field.type === "image" && CONTENT_DEFAULTS[key] === "";
     const id = `content-${key}`;
 
     return (
@@ -235,10 +237,10 @@ export default function ContentEditor({ overrides, onSave, showToast, onDirtyCha
                 type="button"
                 onClick={() => restoreOriginal(key)}
                 className="inline-flex min-h-9 items-center gap-1 px-1 text-[11px] font-semibold text-slate-500 hover:text-[#df0000]"
-                title="Torna al testo originale del sito"
+                title={isOptionalPhoto ? "Toglie la foto dal sito" : "Torna al testo originale del sito"}
               >
                 <X className="w-3 h-3" />
-                <span>Ripristina originale</span>
+                <span>{isOptionalPhoto ? "Rimuovi foto" : "Ripristina originale"}</span>
               </button>
             )}
           </div>

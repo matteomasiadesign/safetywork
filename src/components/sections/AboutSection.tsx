@@ -11,7 +11,7 @@ export default function AboutSection({ content }: { content: SiteContent }) {
   const text2 = content["home.about.text2"];
 
   return (
-    <section id="chi-siamo" className="relative py-24 sm:py-32 overflow-hidden flex items-center min-h-[80vh] bg-slate-900 border-t border-slate-200">
+    <section id="chi-siamo" className="relative py-24 sm:py-32 overflow-hidden flex items-center min-h-[80vh] bg-slate-900">
       {/* Immagine a piena sezione con effetto sfocato e overlay scuro */}
       <div className="absolute inset-0 z-0">
         <img
@@ -22,6 +22,8 @@ export default function AboutSection({ content }: { content: SiteContent }) {
         />
         <div className="absolute inset-0 bg-slate-950/80 mix-blend-multiply" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent" />
+        {/* Sfumatura in testa: riprende il colore con cui finisce la sezione Eventi, senza stacco netto */}
+        <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-slate-950 via-slate-950/70 to-transparent sm:h-64" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
