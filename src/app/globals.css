@@ -141,6 +141,14 @@
     mask-image: radial-gradient(circle 300px at var(--lx) var(--ly), rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.45) 45%, transparent 100%);
   }
 
+  /* Il bordo sinistro della foto si dissolve: niente "rettangolo" dietro al titolo, nemmeno sotto l'alone */
+  @media (min-width: 1024px) {
+    .hero-scanner-fade {
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.5) 35%, #000 70%);
+      mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.5) 35%, #000 70%);
+    }
+  }
+
   /* Hero: ingresso a parole (titolo) e dissolvenza (resto) */
   .hero-word {
     display: inline-block;

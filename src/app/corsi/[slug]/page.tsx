@@ -78,7 +78,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
       <main className="flex-grow pb-24">
         {/* Top Breadcrumbs & Back link */}
-        <div className="bg-white border-b border-slate-200 py-4">
+        <div className="bg-white border-b border-slate-200 pt-24 pb-4 lg:pt-[104px]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
             <Link
               href="/corsi"
@@ -95,7 +95,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
         </div>
 
         {/* Course Header Banner */}
-        <section className="relative bg-slate-950 text-white pt-28 pb-14 lg:pt-36 lg:pb-20 overflow-hidden">
+        <section className="relative bg-slate-950 text-white pt-12 pb-14 lg:pt-16 lg:pb-20 overflow-hidden">
           <div className="absolute inset-0 opacity-25">
             <img
               src={course.image_url || content["courses.fallback_image"]}

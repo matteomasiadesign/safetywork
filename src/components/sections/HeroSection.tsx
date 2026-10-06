@@ -164,7 +164,7 @@ export default function HeroSection({
 
       {/* Livello 2: lo stesso scatto a piena luce, visibile solo attorno al cursore */}
       <div ref={scannerRef} aria-hidden="true" className="hero-scanner pointer-events-none absolute inset-0 z-[1]">
-        <div className="absolute inset-y-0 right-0 w-full lg:w-[66%]">
+        <div className="hero-scanner-fade absolute inset-y-0 right-0 w-full lg:w-[66%]">
           <img src={content["home.hero.image"]} alt="" className="h-full w-full object-cover brightness-105 saturate-125" />
         </div>
       </div>
