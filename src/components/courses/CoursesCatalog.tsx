@@ -4,7 +4,15 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import CourseCard from "@/components/ui/CourseCard";
 import Link from "@/components/ui/Link";
 import type { Course } from "@/lib/types/database";
+import SeeAllLink from "@/components/courses/SeeAllLink";
 import { MODE_OPTIONS, normalizeMode, upcomingLocations, type CourseMode } from "@/lib/courses/format";
+import {
+  IN_PROGRAMMA_HREF,
+  PREVIEW_COUNT,
+  categoryHref,
+  groupByCategory,
+  scheduledCourses,
+} from "@/lib/courses/listing";
 import {
   Search,
   SlidersHorizontal,
@@ -85,6 +93,11 @@ export default function CoursesCatalog({ courses, fallbackImage }: { courses: Co
       return matchesCategory && matchesMode && matchesSearch;
     });
   }, [courses, selectedCategory, selectedMode, searchQuery]);
+
+  // Senza ricerca né filtri il catalogo è a sezioni (in programma + una per categoria); con i filtri, un elenco unico.
+  const isFiltering = selectedCategory !== "Tutti" || selectedMode !== "tutte" || searchQuery.trim() !== "";
+  const scheduled = useMemo(() => scheduledCourses(courses), [courses]);
+  const categoryGroups = useMemo(() => groupByCategory(courses), [courses]);
 
   return (
     <>
@@ -277,7 +290,7 @@ export default function CoursesCatalog({ courses, fallbackImage }: { courses: Co
 
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-500 font-mono">
-                {filteredCourses.length} di {courses.length} corsi visualizzati
+                {isFiltering ? `${filteredCourses.length} di ${courses.length} corsi visualizzati` : `${courses.length} corsi in catalogo`}
               </span>
             </div>
           </div>
@@ -285,7 +298,45 @@ export default function CoursesCatalog({ courses, fallbackImage }: { courses: Co
 
         {/* Courses Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-          {filteredCourses.length > 0 ? (
+          {!isFiltering && courses.length > 0 ? (
+            <div className="space-y-14">
+              {scheduled.length > 0 && (
+                <section aria-labelledby="catalogo-in-programma">
+                  <h2 id="catalogo-in-programma" className="mb-5 text-2xl font-extrabold tracking-tight text-slate-900">
+                    Corsi in programma
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {scheduled.slice(0, PREVIEW_COUNT).map((course) => (
+                      <CourseCard key={course.id} course={course} fallbackImage={fallbackImage} />
+                    ))}
+                  </div>
+                  {scheduled.length > PREVIEW_COUNT && (
+                    <div className="mt-8 flex justify-center">
+                      <SeeAllLink to={IN_PROGRAMMA_HREF}>Vedi tutti i corsi in programma</SeeAllLink>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {categoryGroups.map(({ category, courses: groupCourses }) => (
+                <section key={category.id} aria-labelledby={`catalogo-cat-${category.id}`}>
+                  <h2 id={`catalogo-cat-${category.id}`} className="mb-5 text-2xl font-extrabold tracking-tight text-slate-900">
+                    {category.name}
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {groupCourses.slice(0, PREVIEW_COUNT).map((course) => (
+                      <CourseCard key={course.id} course={course} fallbackImage={fallbackImage} />
+                    ))}
+                  </div>
+                  {groupCourses.length > PREVIEW_COUNT && (
+                    <div className="mt-8 flex justify-center">
+                      <SeeAllLink to={categoryHref(category.slug)}>Vedi tutti i corsi di questa categoria</SeeAllLink>
+                    </div>
+                  )}
+                </section>
+              ))}
+            </div>
+          ) : filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredCourses.map((course) => (
                 <CourseCard key={course.id} course={course} fallbackImage={fallbackImage} />

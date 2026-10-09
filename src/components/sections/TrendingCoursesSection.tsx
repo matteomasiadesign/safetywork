@@ -1,8 +1,8 @@
 import React from "react";
-import Link from "@/components/ui/Link";
 import { Course } from "@/lib/types/database";
 import CourseCard from "@/components/ui/CourseCard";
-import { ArrowRight } from "lucide-react";
+import SeeAllLink from "@/components/courses/SeeAllLink";
+import { PREVIEW_COUNT, scheduledCourses } from "@/lib/courses/listing";
 import RichText from "@/components/ui/RichText";
 import type { SiteContent } from "@/lib/content/schema";
 
@@ -20,9 +20,18 @@ function gridClass(count: number): string {
   return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 }
 
+/**
+ * Anteprima in home: al massimo 4 corsi realmente in programma (con almeno una data non conclusa).
+ * Se in admin ne sono stati messi "In evidenza", si mostrano quelli; altrimenti i 4 con la data più vicina.
+ */
+function pickPreviewCourses(courses: Course[]): Course[] {
+  const scheduled = scheduledCourses(courses);
+  const featured = scheduled.filter((course) => course.is_featured);
+  return (featured.length > 0 ? featured : scheduled).slice(0, PREVIEW_COUNT);
+}
+
 export default function TrendingCoursesSection({ courses, content }: TrendingCoursesSectionProps) {
-  // Mostra SOLO i corsi a cui è già possibile iscriversi
-  const openCourses = courses.filter((c) => c.is_open_for_enrollment);
+  const openCourses = pickPreviewCourses(courses);
   const single = openCourses.length === 1;
 
   return (
@@ -46,16 +55,6 @@ export default function TrendingCoursesSection({ courses, content }: TrendingCou
               {content["home.courses.subtitle"]}
             </p>
           </div>
-
-          <Link
-            to="/corsi"
-            className="group inline-flex w-fit items-center gap-3 rounded-full bg-slate-900 py-3 pl-6 pr-3 text-sm font-bold text-white transition-colors hover:bg-[#008e97] whitespace-nowrap"
-          >
-            <span>Tutti i corsi ({courses.length})</span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15">
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </Link>
         </div>
 
         {openCourses.length > 0 ? (
@@ -71,14 +70,14 @@ export default function TrendingCoursesSection({ courses, content }: TrendingCou
           </div>
         ) : (
           <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">
-            Al momento non ci sono corsi con iscrizioni aperte. Consulta il catalogo completo o contattaci per le
+            Al momento non ci sono corsi con date in programma. Consulta il catalogo completo o contattaci per le
             prossime date.
           </div>
         )}
 
-        <p className="mt-10 text-center text-xs sm:text-sm text-slate-600 font-medium text-balance">
-          {courses.length} percorsi formativi in catalogo, con ricerca e filtri
-        </p>
+        <div className="mt-10 flex justify-center">
+          <SeeAllLink to="/corsi">Vedi tutti i corsi</SeeAllLink>
+        </div>
       </div>
     </section>
   );

@@ -14,6 +14,7 @@ import {
   upcomingEditions,
 } from "@/lib/courses/format";
 import { slugify } from "@/lib/utils/slug";
+import { RESERVED_COURSE_SLUGS } from "@/lib/courses/listing";
 import AdminModal from "@/components/admin/ui/AdminModal";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import SectionHeader from "@/components/admin/ui/SectionHeader";
@@ -529,6 +530,11 @@ export default function CoursesManager({
     if (!slug) {
       setCurrentStep(1);
       showToast("Lo slug non è valido: usa lettere e numeri.", "error");
+      return;
+    }
+    if (RESERVED_COURSE_SLUGS.includes(slug)) {
+      setCurrentStep(1);
+      showToast(`Lo slug "${slug}" è riservato a una pagina del sito: scegline un altro.`, "error");
       return;
     }
 
@@ -1803,7 +1809,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                             <span>In Evidenza (Featured)</span>
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5">
-                            Mostra il badge in evidenza e posiziona in vetrina sulla Home
+                            Lo sceglie per l'anteprima "Corsi in programma" della Home (max 4, solo se ha almeno una data)
                           </div>
                         </div>
                       </label>
@@ -1821,7 +1827,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                             <span>Iscrizioni Aperte</span>
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5">
-                            Abilita il form di prenotazione e mostra nella sezione "Corsi del Momento"
+                            Abilita il form di prenotazione sulla scheda del corso
                           </div>
                         </div>
                       </label>
