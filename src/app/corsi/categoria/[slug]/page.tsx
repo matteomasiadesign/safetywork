@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import CourseListing from "@/components/courses/CourseListing";
 import { getPublishedCourses } from "@/lib/data/catalog";
 import { getSiteContent } from "@/lib/data/content";
-import { scheduledFirst } from "@/lib/courses/listing";
 import { COMPANY_CONFIG } from "@/config/company";
 
 interface PageProps {
@@ -20,7 +19,7 @@ export async function generateStaticParams() {
 /** Corsi pubblicati della categoria; null se la categoria non esiste o non ha corsi. */
 async function getCategoryCourses(slug: string) {
   const courses = (await getPublishedCourses()).filter((course) => course.category.slug === slug);
-  return courses.length > 0 ? { category: courses[0].category, courses: scheduledFirst(courses) } : null;
+  return courses.length > 0 ? { category: courses[0].category, courses } : null;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -41,7 +40,7 @@ export default async function CategoryCoursesPage({ params }: PageProps) {
     <CourseListing
       eyebrow="Categoria"
       title={found.category.name}
-      description="Tutti i corsi di questa categoria: quelli con una data in programma vengono per primi."
+      description="Tutti i corsi di questa categoria, nell’ordine scelto da noi."
       courses={found.courses}
       fallbackImage={content["courses.fallback_image"]}
       emptyMessage="Nessun corso in questa categoria."

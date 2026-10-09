@@ -19,7 +19,7 @@ export default async function ScheduledCoursesPage() {
     <CourseListing
       eyebrow="Date confermate"
       title="Corsi in programma"
-      description="I corsi con almeno una data in calendario, dal più vicino. Scegli una scheda per vedere programma, sedi e inviare la richiesta di iscrizione."
+      description="I corsi con almeno una data in calendario. Scegli una scheda per vedere programma, sedi e inviare la richiesta di iscrizione."
       courses={scheduledCourses(courses)}
       fallbackImage={content["courses.fallback_image"]}
       emptyMessage="Al momento non ci sono corsi con date in programma. Consulta il catalogo completo o contattaci per le prossime date."

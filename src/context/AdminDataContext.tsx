@@ -105,6 +105,8 @@ interface AdminDataContextType {
   setCourseFlags: (id: string, flags: CourseFlags) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
   duplicateCourse: (id: string) => Promise<Course>;
+  /** Salva il nuovo ordine dei corsi (elenco completo degli id, nell'ordine voluto). */
+  reorderCourses: (orderedIds: string[]) => Promise<void>;
 
   saveService: (input: ServiceInput, id?: string, imageFile?: File | null) => Promise<ServiceItem>;
   deleteService: (id: string) => Promise<void>;
@@ -279,7 +281,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       const supabase = getSupabase();
       const [cats, crs, srv, evt, cnt] = await Promise.all([
         supabase.from("categories").select("*").order("sort_order").order("name"),
-        supabase.from("courses").select(COURSE_SELECT).order("created_at", { ascending: false }),
+        supabase.from("courses").select(COURSE_SELECT).order("sort_order").order("created_at", { ascending: false }),
         supabase.from("services").select("*").order("sort_order").order("code"),
         supabase.from("agenda_events").select("*").order("start_date").order("start_time"),
         supabase.from("site_content").select("key, value"),
@@ -514,6 +516,8 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
       let uploadedPath: string | null = null;
       const payload = { ...input };
+      // Un corso nuovo (o duplicato) va in fondo all'elenco; poi si sposta con il drag & drop.
+      if (!id) payload.sort_order = courses.reduce((max, c) => Math.max(max, c.sort_order), 0) + 1;
       if (imageFile) {
         const uploaded = await uploadImage(imageFile, "courses");
         uploadedPath = uploaded.path;
@@ -532,7 +536,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       }
 
       let saved = toCourse(data);
-      setCourses((prev) => (id ? prev.map((c) => (c.id === id ? saved : c)) : [saved, ...prev]));
+      setCourses((prev) => (id ? prev.map((c) => (c.id === id ? saved : c)) : [...prev, saved]));
 
       // Immagine sostituita: la vecchia (se nostra e non più usata) va rimossa.
       if (previousImage && previousImage !== saved.image_url) await removeImageIfUnused(previousImage);
@@ -638,6 +642,32 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       });
     },
     [courses, saveCourse]
+  );
+
+  const reorderCourses = useCallback(
+    async (orderedIds: string[]) => {
+      const supabase = getSupabase();
+      const position = new Map(orderedIds.map((id, index) => [id, index + 1]));
+      // Si scrivono solo i corsi che hanno cambiato posizione.
+      const changed = courses.filter((c) => position.has(c.id) && position.get(c.id) !== c.sort_order);
+
+      const results = await Promise.all(
+        changed.map((c) => supabase.from("courses").update({ sort_order: position.get(c.id) as number }).eq("id", c.id))
+      );
+      const failed = results.find((result) => result.error);
+
+      // Lo stato locale segue il database: i salvataggi riusciti restano anche se uno è fallito.
+      const saved = new Map(changed.filter((_, index) => !results[index].error).map((c) => [c.id, position.get(c.id) as number]));
+      setCourses((prev) =>
+        prev
+          .map((c) => (saved.has(c.id) ? { ...c, sort_order: saved.get(c.id) as number } : c))
+          .sort((a, b) => a.sort_order - b.sort_order)
+      );
+
+      await notifyPublicSite();
+      if (failed?.error) throw new Error(`Ordine salvato solo in parte: ${errorMessage(failed.error)}`);
+    },
+    [courses, getSupabase]
   );
 
   // ------------------------------------------------------------------ servizi
@@ -830,6 +860,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       setCourseFlags,
       deleteCourse,
       duplicateCourse,
+      reorderCourses,
       saveService,
       deleteService,
       updateInquiry,
@@ -856,6 +887,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       setCourseFlags,
       deleteCourse,
       duplicateCourse,
+      reorderCourses,
       saveService,
       deleteService,
       updateInquiry,

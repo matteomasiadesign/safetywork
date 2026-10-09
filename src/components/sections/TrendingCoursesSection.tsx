@@ -22,7 +22,7 @@ function gridClass(count: number): string {
 
 /**
  * Anteprima in home: al massimo 4 corsi realmente in programma (con almeno una data non conclusa).
- * Se in admin ne sono stati messi "In evidenza", si mostrano quelli; altrimenti i 4 con la data più vicina.
+ * Se in admin ne sono stati messi "In evidenza", si mostrano quelli; altrimenti i primi 4 nell'ordine scelto in admin.
  */
 function pickPreviewCourses(courses: Course[]): Course[] {
   const scheduled = scheduledCourses(courses);

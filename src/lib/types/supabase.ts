@@ -162,6 +162,7 @@ export type Database = {
           mode: string
           normative_ref: string
           short_description: string
+          sort_order: number
           slug: string
           target_audience: string | null
           title: string
@@ -183,6 +184,7 @@ export type Database = {
           mode?: string
           normative_ref?: string
           short_description?: string
+          sort_order?: number
           slug: string
           target_audience?: string | null
           title: string
@@ -204,6 +206,7 @@ export type Database = {
           mode?: string
           normative_ref?: string
           short_description?: string
+          sort_order?: number
           slug?: string
           target_audience?: string | null
           title?: string

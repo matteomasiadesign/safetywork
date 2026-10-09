@@ -25,13 +25,13 @@ export class CatalogError extends Error {
   }
 }
 
-/** Corsi pubblicati: in evidenza per primi, poi i più recenti. */
+/** Corsi pubblicati, nell'ordine scelto in admin (drag & drop). */
 export const getPublishedCourses = cache(async (): Promise<Course[]> => {
   const { data, error } = await createPublicClient()
     .from("courses")
     .select(COURSE_SELECT)
     .eq("is_published", true)
-    .order("is_featured", { ascending: false })
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
   if (error) throw new CatalogError("i corsi", error.message);

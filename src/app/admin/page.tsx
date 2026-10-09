@@ -35,6 +35,7 @@ function AdminDashboard() {
     setCourseFlags,
     deleteCourse,
     duplicateCourse,
+    reorderCourses,
     saveService,
     deleteService,
     updateInquiry,
@@ -207,6 +208,7 @@ function AdminDashboard() {
               onToggleCourse={setCourseFlags}
               onDeleteCourse={deleteCourse}
               onDuplicateCourse={duplicateCourse}
+              onReorderCourses={reorderCourses}
               onAddCategory={addCategory}
               onNavigateToCategories={() => goTo("categories")}
               showToast={showToast}

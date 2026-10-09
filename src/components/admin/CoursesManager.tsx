@@ -16,6 +16,7 @@ import {
 import { slugify } from "@/lib/utils/slug";
 import { RESERVED_COURSE_SLUGS } from "@/lib/courses/listing";
 import AdminModal from "@/components/admin/ui/AdminModal";
+import CourseOrderModal from "@/components/admin/CourseOrderModal";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import SectionHeader from "@/components/admin/ui/SectionHeader";
 import { btnOutline, btnPrimary, btnSecondary, btnTeal } from "@/components/admin/ui/styles";
@@ -46,6 +47,7 @@ import {
   ChevronRight,
   ShieldCheck,
   SlidersHorizontal,
+  ListOrdered,
   MoreHorizontal,
 } from "lucide-react";
 
@@ -124,6 +126,7 @@ interface CoursesManagerProps {
   onToggleCourse: (id: string, flags: CourseFlags) => Promise<void>;
   onDeleteCourse: (id: string) => Promise<void>;
   onDuplicateCourse: (id: string) => Promise<unknown>;
+  onReorderCourses: (orderedIds: string[]) => Promise<void>;
   onAddCategory: (name: string) => Promise<Category>;
   onNavigateToCategories: () => void;
   showToast: (msg: string, tone?: "success" | "error") => void;
@@ -180,6 +183,7 @@ export default function CoursesManager({
   onToggleCourse,
   onDeleteCourse,
   onDuplicateCourse,
+  onReorderCourses,
   onAddCategory,
   onNavigateToCategories,
   showToast,
@@ -202,6 +206,7 @@ export default function CoursesManager({
   const [deleteConfirmCourse, setDeleteConfirmCourse] = useState<Course | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [menuCourse, setMenuCourse] = useState<Course | null>(null);
+  const [orderOpen, setOrderOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -621,6 +626,11 @@ export default function CoursesManager({
                 </button>
               ))}
             </div>
+
+            <button type="button" onClick={() => setOrderOpen(true)} disabled={courses.length < 2} className={btnOutline}>
+              <ListOrdered className="h-4 w-4 text-[#008e97]" />
+              <span>Ordina</span>
+            </button>
 
             <button type="button" onClick={handleOpenAddModal} className={btnPrimary}>
               <Plus className="h-4 w-4" />
@@ -1837,6 +1847,15 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
               )}
         </form>
       </AdminModal>
+
+      <CourseOrderModal
+        open={orderOpen}
+        onClose={() => setOrderOpen(false)}
+        courses={courses}
+        fallbackImage={fallbackImage}
+        onSave={onReorderCourses}
+        showToast={showToast}
+      />
 
       {/* Filtri aggiuntivi (mobile) */}
       <AdminModal
