@@ -1251,12 +1251,14 @@ export default function CoursesManager({
               )}
 
               {currentStep < 4 ? (
-                <button type="button" onClick={handleNextStep} className={`${btnTeal} flex-1 sm:flex-none`}>
+                // `key` distinte: senza, React riusa lo stesso <button> cambiandone il tipo da "button" a "submit"
+                // proprio durante il clic su "Avanti", e il browser invia il modulo salvando il corso al passo 4.
+                <button key="next" type="button" onClick={handleNextStep} className={`${btnTeal} flex-1 sm:flex-none`}>
                   <span>Avanti</span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
               ) : (
-                <button type="submit" form="course-form" disabled={isSaving} className={`${btnPrimary} flex-1 sm:flex-none`}>
+                <button key="save" type="submit" form="course-form" disabled={isSaving} className={`${btnPrimary} flex-1 sm:flex-none`}>
                   <Check className="h-4 w-4" />
                   <span>{isSaving ? "Salvataggio..." : editingCourse ? "Salva Modifiche" : "Salva Corso"}</span>
                 </button>
