@@ -6,6 +6,7 @@ import { Inquiry } from "@/lib/types/database";
 import { COMPANY_CONFIG } from "@/config/company";
 import AdminModal from "@/components/admin/ui/AdminModal";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+
 import {
   Inbox,
   Search,
@@ -24,6 +25,15 @@ import {
   ChevronUp,
   MoreHorizontal,
 } from "lucide-react";
+
+const STATUS_NAMES: Record<string, string> = {
+  nuovo: "Nuovo",
+  preventivo_inviato: "Preventivo Inviato",
+  contattato: "Preventivo Inviato",
+  confermato: "Confermato",
+  non_interessato: "Non Interessato",
+  archiviato: "Archiviato",
+};
 
 interface InquiriesManagerProps {
   inquiries: Inquiry[];
@@ -75,6 +85,8 @@ export default function InquiriesManager({
 
   // Conferma eliminazione e menu "altre azioni" (mobile)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // Cambio di stato: si salva solo dopo la conferma esplicita
+  const [pendingStatus, setPendingStatus] = useState<{ inquiry: Inquiry; status: Inquiry["status"] } | null>(null);
   const [menuFor, setMenuFor] = useState<Inquiry | null>(null);
 
   // Statistics
@@ -316,7 +328,7 @@ export default function InquiriesManager({
                   <div className="flex items-center gap-2">
                     <select
                       value={inq.status === "contattato" ? "preventivo_inviato" : inq.status}
-                      onChange={(e) => onUpdateStatus(inq.id, e.target.value as Inquiry["status"])}
+                      onChange={(e) => setPendingStatus({ inquiry: inq, status: e.target.value as Inquiry["status"] })}
                       aria-label={`Stato della richiesta di ${inq.name}`}
                       className={`cursor-pointer rounded-lg border px-2.5 py-1 text-[11px] font-black uppercase tracking-wider shadow-2xs transition-all focus:outline-none ${
                         inq.status === "nuovo"
@@ -701,6 +713,21 @@ export default function InquiriesManager({
           </ul>
         )}
       </AdminModal>
+
+      <ConfirmDialog
+        open={Boolean(pendingStatus)}
+        tone="neutral"
+        title="Cambiare lo stato della richiesta?"
+        confirmLabel="Salva"
+        onConfirm={() => {
+          if (pendingStatus) onUpdateStatus(pendingStatus.inquiry.id, pendingStatus.status);
+          setPendingStatus(null);
+        }}
+        onCancel={() => setPendingStatus(null)}
+      >
+        La richiesta di <strong>{pendingStatus?.inquiry.name}</strong> passerà a{" "}
+        <strong>{pendingStatus ? STATUS_NAMES[pendingStatus.status] ?? pendingStatus.status : ""}</strong>.
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={Boolean(deleteConfirmId)}

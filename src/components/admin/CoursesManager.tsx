@@ -293,6 +293,38 @@ export default function CoursesManager({
     }
   };
 
+  // Interruttori (pubblicato / in evidenza / iscrizioni): cambiano il sito pubblico, quindi non si salvano al clic
+  // ma solo dopo la conferma esplicita.
+  const [pendingFlag, setPendingFlag] = useState<{ course: Course; flag: keyof CourseFlags } | null>(null);
+  const [isApplyingFlag, setIsApplyingFlag] = useState(false);
+
+  const requestFlag = (course: Course, flag: keyof CourseFlags) => setPendingFlag({ course, flag });
+
+  const flagChange = (course: Course, flag: keyof CourseFlags) => {
+    const now = Boolean(course[flag]);
+    const name = `«${course.title}»`;
+    if (flag === "is_published")
+      return now
+        ? { title: "Mettere il corso in bozza?", text: `${name} non sarà più visibile sul sito.` }
+        : { title: "Pubblicare il corso?", text: `${name} diventerà visibile sul sito.` };
+    if (flag === "is_featured")
+      return now
+        ? { title: "Togliere il corso da In evidenza?", text: `${name} non sarà più tra i corsi scelti per l'anteprima in home.` }
+        : { title: "Mettere il corso In evidenza?", text: `${name} sarà tra i corsi scelti per l'anteprima in home (se ha una data in programma).` };
+    return now
+      ? { title: "Chiudere le iscrizioni?", text: `Sulla scheda di ${name} non sarà più possibile inviare richieste di iscrizione.` }
+      : { title: "Aprire le iscrizioni?", text: `Sulla scheda di ${name} sarà possibile inviare richieste di iscrizione.` };
+  };
+
+  const confirmFlag = async () => {
+    if (!pendingFlag) return;
+    const { course, flag } = pendingFlag;
+    setIsApplyingFlag(true);
+    await runAction(() => onToggleCourse(course.id, { [flag]: !course[flag] }));
+    setIsApplyingFlag(false);
+    setPendingFlag(null);
+  };
+
   // KPI Statistics
   const stats = useMemo(() => {
     const openEnrollment = courses.filter((c) => c.is_open_for_enrollment).length;
@@ -792,7 +824,7 @@ export default function CoursesManager({
                 <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50 px-3 py-2">
                   <button
                     type="button"
-                    onClick={() => runAction(() => onToggleCourse(course.id, { is_published: !course.is_published }))}
+                    onClick={() => requestFlag(course, "is_published")}
                     aria-pressed={course.is_published}
                     className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-colors ${
                       course.is_published ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
@@ -804,7 +836,7 @@ export default function CoursesManager({
                   <button
                     type="button"
                     onClick={() =>
-                      runAction(() => onToggleCourse(course.id, { is_open_for_enrollment: !course.is_open_for_enrollment }))
+                      requestFlag(course, "is_open_for_enrollment")
                     }
                     aria-pressed={course.is_open_for_enrollment}
                     className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-colors ${
@@ -877,7 +909,7 @@ export default function CoursesManager({
                 <div className="absolute top-3 right-3 flex items-center gap-1.5">
                   {/* Featured toggle */}
                   <button
-                    onClick={() => runAction(() => onToggleCourse(course.id, { is_featured: !course.is_featured }))}
+                    onClick={() => requestFlag(course, "is_featured")}
                     className={`p-1.5 rounded-lg backdrop-blur-xs transition-all ${
                       course.is_featured
                         ? "bg-amber-500 text-white shadow-xs"
@@ -891,7 +923,7 @@ export default function CoursesManager({
                   {/* Enrollment status pill */}
                   <button
                     onClick={() =>
-                      runAction(() => onToggleCourse(course.id, { is_open_for_enrollment: !course.is_open_for_enrollment }))
+                      requestFlag(course, "is_open_for_enrollment")
                     }
                     className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs transition-all ${
                       course.is_open_for_enrollment
@@ -960,7 +992,7 @@ export default function CoursesManager({
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <button
                       type="button"
-                      onClick={() => runAction(() => onToggleCourse(course.id, { is_published: !course.is_published }))}
+                      onClick={() => requestFlag(course, "is_published")}
                       className="bg-slate-50 hover:bg-slate-100 p-2 rounded-xl border border-slate-100 text-left transition-colors"
                       title="Clicca per pubblicare o mettere in bozza"
                     >
@@ -1112,7 +1144,7 @@ export default function CoursesManager({
                     {/* Featured toggle */}
                     <td className="py-3.5 px-3 text-center">
                       <button
-                        onClick={() => runAction(() => onToggleCourse(course.id, { is_featured: !course.is_featured }))}
+                        onClick={() => requestFlag(course, "is_featured")}
                         className={`p-1.5 rounded-lg border transition-colors ${
                           course.is_featured
                             ? "bg-amber-50 text-amber-600 border-amber-200"
@@ -1128,7 +1160,7 @@ export default function CoursesManager({
                     <td className="py-3.5 px-3 text-center">
                       <button
                         onClick={() =>
-                          runAction(() => onToggleCourse(course.id, { is_open_for_enrollment: !course.is_open_for_enrollment }))
+                          requestFlag(course, "is_open_for_enrollment")
                         }
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${
                           course.is_open_for_enrollment
@@ -1148,7 +1180,7 @@ export default function CoursesManager({
                     {/* Published */}
                     <td className="py-3.5 px-3 text-center">
                       <button
-                        onClick={() => runAction(() => onToggleCourse(course.id, { is_published: !course.is_published }))}
+                        onClick={() => requestFlag(course, "is_published")}
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${
                           course.is_published ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
                         }`}
@@ -1936,7 +1968,7 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
                 label: menuCourse.is_featured ? "Rimuovi da In evidenza" : "Metti in evidenza",
                 icon: Sparkles,
                 tone: "bg-amber-50 text-amber-600",
-                onClick: () => runAction(() => onToggleCourse(menuCourse.id, { is_featured: !menuCourse.is_featured })),
+                onClick: () => requestFlag(menuCourse, "is_featured"),
               },
               {
                 label: "Duplica come bozza",
@@ -1993,6 +2025,18 @@ Questionario a risposta multipla e colloquio di approfondimento con il docente q
           </ul>
         )}
       </AdminModal>
+
+      <ConfirmDialog
+        open={Boolean(pendingFlag)}
+        tone="neutral"
+        title={pendingFlag ? flagChange(pendingFlag.course, pendingFlag.flag).title : ""}
+        confirmLabel={isApplyingFlag ? "Salvataggio..." : "Salva"}
+        busy={isApplyingFlag}
+        onConfirm={confirmFlag}
+        onCancel={() => setPendingFlag(null)}
+      >
+        {pendingFlag ? flagChange(pendingFlag.course, pendingFlag.flag).text : null}
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={Boolean(deleteConfirmCourse)}

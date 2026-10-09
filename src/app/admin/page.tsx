@@ -14,6 +14,7 @@ import CategoriesManager from "@/components/admin/CategoriesManager";
 import ServicesManager from "@/components/admin/ServicesManager";
 import AgendaManager from "@/components/admin/AgendaManager";
 import ContentEditor from "@/components/admin/ContentEditor";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import { CONTENT_DEFAULTS } from "@/lib/content/schema";
 
 function AdminDashboard() {
@@ -51,6 +52,7 @@ function AdminDashboard() {
   const [userEmail, setUserEmail] = useState("");
   const [preselectedInquiry, setPreselectedInquiry] = useState<Inquiry | null>(null);
   const [isCleaning, setIsCleaning] = useState(false);
+  const [cleanupConfirmOpen, setCleanupConfirmOpen] = useState(false);
   const [contentDirty, setContentDirty] = useState(false);
 
   // Cambiare sezione apre "una pagina nuova": si riparte dall'alto.
@@ -96,6 +98,7 @@ function AdminDashboard() {
   };
 
   const handleCleanupImages = async () => {
+    setCleanupConfirmOpen(false);
     setIsCleaning(true);
     try {
       const removed = await cleanupOrphanImages();
@@ -144,7 +147,7 @@ function AdminDashboard() {
       onLogout={handleLogout}
       loadError={Boolean(loadError)}
       isCleaning={isCleaning}
-      onCleanup={handleCleanupImages}
+      onCleanup={() => setCleanupConfirmOpen(true)}
       toast={toast}
     >
       {isLoading && (
@@ -236,6 +239,17 @@ function AdminDashboard() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={cleanupConfirmOpen}
+        title="Eliminare le immagini inutilizzate?"
+        confirmLabel="Sì, elimina"
+        onConfirm={handleCleanupImages}
+        onCancel={() => setCleanupConfirmOpen(false)}
+      >
+        Verranno cancellate da Storage tutte le foto che non sono più usate da nessun corso, servizio o contenuto del sito.
+        L&apos;operazione non è reversibile.
+      </ConfirmDialog>
     </AdminShell>
   );
 }

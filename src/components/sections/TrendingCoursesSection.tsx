@@ -20,18 +20,27 @@ function gridClass(count: number): string {
   return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 }
 
+const FALLBACK_TITLE = "I nostri corsi";
+const FALLBACK_SUBTITLE =
+  "Al momento non ci sono date in calendario: ecco alcuni dei nostri corsi. Contattaci per conoscere le prossime edizioni.";
+
 /**
  * Anteprima in home: al massimo 4 corsi realmente in programma (con almeno una data non conclusa).
  * Se in admin ne sono stati messi "In evidenza", si mostrano quelli; altrimenti i primi 4 nell'ordine scelto in admin.
+ * Senza corsi in programma la sezione non resta vuota: si mostrano i primi 4 del catalogo (sempre gli stessi, non a caso),
+ * di nuovo dando la precedenza agli "In evidenza".
  */
-function pickPreviewCourses(courses: Course[]): Course[] {
+function pickPreviewCourses(courses: Course[]): { list: Course[]; scheduled: boolean } {
+  const prefer = (list: Course[]) => {
+    const featured = list.filter((course) => course.is_featured);
+    return (featured.length > 0 ? featured : list).slice(0, PREVIEW_COUNT);
+  };
   const scheduled = scheduledCourses(courses);
-  const featured = scheduled.filter((course) => course.is_featured);
-  return (featured.length > 0 ? featured : scheduled).slice(0, PREVIEW_COUNT);
+  return scheduled.length > 0 ? { list: prefer(scheduled), scheduled: true } : { list: prefer(courses), scheduled: false };
 }
 
 export default function TrendingCoursesSection({ courses, content }: TrendingCoursesSectionProps) {
-  const openCourses = pickPreviewCourses(courses);
+  const { list: openCourses, scheduled } = pickPreviewCourses(courses);
   const single = openCourses.length === 1;
 
   return (
@@ -48,11 +57,11 @@ export default function TrendingCoursesSection({ courses, content }: TrendingCou
             </div>
 
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.05] text-balance">
-              <RichText text={content["home.courses.title"]} />
+              {scheduled ? <RichText text={content["home.courses.title"]} /> : FALLBACK_TITLE}
             </h2>
 
             <p className="mt-3 text-base sm:text-lg text-slate-600 leading-relaxed text-pretty">
-              {content["home.courses.subtitle"]}
+              {scheduled ? content["home.courses.subtitle"] : FALLBACK_SUBTITLE}
             </p>
           </div>
         </div>
@@ -70,8 +79,7 @@ export default function TrendingCoursesSection({ courses, content }: TrendingCou
           </div>
         ) : (
           <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">
-            Al momento non ci sono corsi con date in programma. Consulta il catalogo completo o contattaci per le
-            prossime date.
+            Il catalogo sarà online a breve. Contattaci per conoscere le prossime date.
           </div>
         )}
 
