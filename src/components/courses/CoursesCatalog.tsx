@@ -305,11 +305,7 @@ export default function CoursesCatalog({ courses, fallbackImage }: { courses: Co
                   <h2 id="catalogo-in-programma" className="mb-5 text-2xl font-extrabold tracking-tight text-slate-900">
                     Corsi in programma
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {scheduled.slice(0, PREVIEW_COUNT).map((course) => (
-                      <CourseCard key={course.id} course={course} fallbackImage={fallbackImage} />
-                    ))}
-                  </div>
+                  <CourseRow courses={scheduled.slice(0, PREVIEW_COUNT)} fallbackImage={fallbackImage} />
                   {scheduled.length > PREVIEW_COUNT && (
                     <div className="mt-8 flex justify-center">
                       <SeeAllLink to={IN_PROGRAMMA_HREF}>Vedi tutti i corsi in programma</SeeAllLink>
@@ -323,11 +319,7 @@ export default function CoursesCatalog({ courses, fallbackImage }: { courses: Co
                   <h2 id={`catalogo-cat-${category.id}`} className="mb-5 text-2xl font-extrabold tracking-tight text-slate-900">
                     {category.name}
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {groupCourses.slice(0, PREVIEW_COUNT).map((course) => (
-                      <CourseCard key={course.id} course={course} fallbackImage={fallbackImage} />
-                    ))}
-                  </div>
+                  <CourseRow courses={groupCourses.slice(0, PREVIEW_COUNT)} fallbackImage={fallbackImage} />
                   {groupCourses.length > PREVIEW_COUNT && (
                     <div className="mt-8 flex justify-center">
                       <SeeAllLink to={categoryHref(category.slug)}>Vedi tutti i corsi di questa categoria</SeeAllLink>
@@ -372,6 +364,23 @@ export default function CoursesCatalog({ courses, fallbackImage }: { courses: Co
         </div>
       </main>
     </>
+  );
+}
+
+/**
+ * Riga di corsi di una sezione del catalogo: su mobile scorre in orizzontale (la card successiva
+ * resta in vista per far capire che si può scorrere), da md in su torna la griglia.
+ * Il py-2/-my-2 lascia spazio a ombra e sollevamento della card, che lo scroll altrimenti taglierebbe.
+ */
+function CourseRow({ courses, fallbackImage }: { courses: Course[]; fallbackImage: string }) {
+  return (
+    <div className="-mx-4 -my-2 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 py-2 no-scrollbar sm:-mx-6 sm:scroll-px-6 sm:px-6 md:mx-0 md:my-0 md:grid md:snap-none md:grid-cols-2 md:gap-6 md:overflow-visible md:px-0 md:py-0 lg:grid-cols-3 xl:grid-cols-4">
+      {courses.map((course) => (
+        <div key={course.id} className="w-[85%] max-w-sm shrink-0 snap-start md:w-auto md:max-w-none">
+          <CourseCard course={course} fallbackImage={fallbackImage} />
+        </div>
+      ))}
+    </div>
   );
 }
 
