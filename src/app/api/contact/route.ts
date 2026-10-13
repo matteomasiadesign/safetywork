@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import { editionLabel, isUpcoming, modeLabel } from "@/lib/courses/format";
+import { PRIVACY_POLICY_VERSION } from "@/config/privacy";
 import type { TablesInsert } from "@/lib/types/supabase";
-
-/** Versione dell'informativa privacy accettata dall'utente (da aggiornare se il testo cambia). */
-const PRIVACY_POLICY_VERSION = "1";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

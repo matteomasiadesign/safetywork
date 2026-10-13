@@ -408,8 +408,16 @@ export default function ContactSection({ content }: { content: ContentSlice<"hom
                             className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 text-[#008e97] focus:ring-[#008e97]"
                           />
                           <span>
-                            Acconsento al trattamento dei miei dati per essere ricontattato, secondo l'informativa sulla
-                            privacy (Regolamento UE 2016/679).
+                            Ho letto l'
+                            <a
+                              href="/privacy"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-[#008e97] underline"
+                            >
+                              informativa sulla privacy
+                            </a>{" "}
+                            (Regolamento UE 2016/679) e acconsento al trattamento dei miei dati per essere ricontattato.
                           </span>
                         </label>
                       </div>

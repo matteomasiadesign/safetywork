@@ -236,8 +236,12 @@ export default function Footer({ courseLinks = [], contacts, logoSrc }: FooterPr
           </div>
 
           <div className="flex items-center space-x-6">
-            <span className="hover:text-white cursor-pointer transition-colors">Privacy Policy</span>
-            <span className="hover:text-white cursor-pointer transition-colors">Cookie Policy</span>
+            <Link href="/privacy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/cookie" className="hover:text-white transition-colors">
+              Cookie Policy
+            </Link>
             <button
               onClick={scrollToTop}
               className="p-2.5 rounded-xl bg-white/5 hover:bg-[#008e97] text-white transition-all ml-2 border border-white/10 hover:border-[#008e97]"

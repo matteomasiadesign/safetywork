@@ -489,8 +489,17 @@ export default function CourseBookingForm({ course, phoneHref, editions }: Cours
               className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#008e97] focus:ring-[#008e97]"
             />
             <span className="text-xs text-slate-600 leading-relaxed">
-              Accetto l'informativa sulla privacy ai sensi del Regolamento UE 2016/679 (GDPR) e autorizzo il
-              trattamento dei dati forniti per gestire la richiesta di iscrizione. *
+              Ho letto l'
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-[#008e97] underline"
+              >
+                informativa sulla privacy
+              </a>{" "}
+              ai sensi del Regolamento UE 2016/679 (GDPR) e autorizzo il trattamento dei dati forniti per gestire la
+              richiesta di iscrizione. *
             </span>
           </label>
 
