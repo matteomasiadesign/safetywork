@@ -1,11 +1,13 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertTriangle } from "lucide-react";
 import Link from "@/components/ui/Link";
 import { createClient } from "@/lib/supabase/client";
+
+const NOT_AUTHORIZED_MESSAGE = "Questo account non è abilitato all'area amministrativa.";
 
 function LoginForm() {
   const router = useRouter();
@@ -15,14 +17,21 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(
-    notAuthorized ? "Questo account non è abilitato all'area amministrativa." : ""
-  );
+  const [error, setError] = useState(notAuthorized ? NOT_AUTHORIZED_MESSAGE : "");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Dopo un accesso senza permessi il middleware rimanda su questa stessa pagina:
+  // il componente non viene rimontato, quindi il messaggio va sincronizzato qui.
+  useEffect(() => {
+    if (notAuthorized) {
+      setError(NOT_AUTHORIZED_MESSAGE);
+    }
+  }, [notAuthorized]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    // Con ?motivo=non-autorizzato l'URL non cambia ai tentativi successivi: il messaggio resta.
+    setError(notAuthorized ? NOT_AUTHORIZED_MESSAGE : "");
     setIsLoggingIn(true);
 
     try {
