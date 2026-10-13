@@ -241,7 +241,7 @@ export default function CoursesManager({
     mode: "presenza",
     validity_years: 5,
     normative_ref: "Art. 37 D.Lgs. 81/08 - Accordo Stato-Regioni",
-    target_audience: "Lavoratori, Preposti e Datori di Lavoro",
+    target_audience: "Lavoratori e Datori di Lavoro",
     certification_issued: "Attestato ufficiale abilitativo valido su tutto il territorio nazionale con verifica finale",
     image_url: "",
     is_featured: false,
